@@ -349,39 +349,18 @@
       
         
           
-            <p><img src="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg" alt="一条难以驾驭的龙"></p>
-<h2 id="LLVM简介"><a href="#LLVM简介" class="headerlink" title="LLVM简介"></a>LLVM简介</h2><p>LLVM(low level virtual machine)是一个先进的编译器框架，它提供了一种代码编写良好的中间表示(IR)，可以作为多种语言的后端，还可以提供与变成语言无关的优化和针对多种cpu的代码生成功能。<br>LLVM的主要架构如下：</p>
-<ul>
-<li>前端：前端用来获取源代码然后将它转变为某种中间表示，我们可以选择不同的编译器来作为LLVM的前端，如gcc，clang。</li>
-<li>Pass：Pass用来将程序的中间表示之间相互变换。一般情况下，Pass可以用来优化代码，这部分通常是我们关注的部分。</li>
-<li>后端：后端用来生成实际的机器码，一般情况下不会关注这一部分。</li>
-</ul>
-<p><img src="http://osvtd0cnl.bkt.clouddn.com/llvm-1.png" alt="LLVM的架构图"></p>
-<p>所以通过LLVM框架，很多语言经过前端处理后，就一统江湖，转为中间层IR。</p>
-<p>本文就是针对IR层实现的混淆。</p>
-<h2 id="IR中间层"><a href="#IR中间层" class="headerlink" title="IR中间层"></a>IR中间层</h2><p>开始混淆之前，得先了解IR层是什么样子的。</p>
-<p>IR层有三种形态：</p>
-<ol>
-<li>BitCode（以<code>.bc</code>结尾的文件）</li>
-<li>可读文本(以<code>.ll</code>结尾的文件)</li>
-<li>内存形式</li>
-</ol>
-<p>IR有个重要的特性 <strong>SSA(Static Single Assignment)</strong>：变量只会被使用一次（但是可以重复store赋值）这样可以方便了数据流分析</p>
-<p>全局变量是<strong>@</strong>局部变量是<strong>%</strong>，至于simbol name随意，数字、字母啥都行，而且没有数量上限</p>
-<p>IR有四大要素 Module Function BasicBlock 和 Instruction</p>
-<h3 id="Module"><a href="#Module" class="headerlink" title="Module"></a>Module</h3><p>IR的顶层由Module组成，正常一个.c .cpp .m文件都会被编译成一个Module。</p>
-<p>Module主要由Function组成，其次还包括全局变量、外部函数原型、数据结构的申明</p>
-<h3 id="Function"><a href="#Function" class="headerlink" title="Function"></a>Function</h3><p>Function则是有BasicBlock组成，且必有一个<strong>Entry</strong> BasicBlock</p>
-<p>每个Function都有属性Attribute，可以通过源码给Function添加属性。后续Pass优化的时候会参考方法的属性。如<code>optsize</code>、<code>inline</code></p>
-<h3 id="BasicBlock"><a href="#BasicBlock" class="headerlink" title="BasicBlock"></a>BasicBlock</h3><p>BB是一串连续的代码块，入口到出口不会有jump。<br>出口必须jump其他的BB或者return<br>Function有个特殊的BB，lable叫<code>Entry</code>，所有的BB都不能jump到<code>Entry</code></p>
-<h3 id="Instruction"><a href="#Instruction" class="headerlink" title="Instruction"></a>Instruction</h3><p>就是组成BasicBlock的每条指令咯…读起来和汇编有点像~</p>
-<h2 id="逻辑混淆"><a href="#逻辑混淆" class="headerlink" title="逻辑混淆"></a>逻辑混淆</h2><p>说是逻辑混淆，其实是利用了LLVM中间层的”优化”Pass</p>
-<p>而Pass可以分为三个级别ModulePass、FunctionPass、BasicBlockPass。</p>
-<p>我们可以通过IPO里面的<code>PassManagerBuilder.cpp</code>中的<code>populateXXXPass</code>添加注册相应级别的Pass。</p>
-<p>参考了<a href="https://github.com/obfuscator-llvm/obfuscator" target="_blank" rel="external">OLLVM开源项目</a>，正式进入重点</p>
-<h3 id="BCF-Bogus-Control-Flow"><a href="#BCF-Bogus-Control-Flow" class="headerlink" title="BCF(Bogus Control Flow)"></a>BCF(Bogus Control Flow)</h3><h3 id="FLA-Flattening-Control-Flow"><a href="#FLA-Flattening-Control-Flow" class="headerlink" title="FLA(Flattening Control Flow)"></a>FLA(Flattening Control Flow)</h3><h3 id="SUB"><a href="#SUB" class="headerlink" title="SUB"></a>SUB</h3><h2 id="字符串混淆"><a href="#字符串混淆" class="headerlink" title="字符串混淆"></a>字符串混淆</h2><h2 id="符号混淆"><a href="#符号混淆" class="headerlink" title="符号混淆"></a>符号混淆</h2><p>…loading…</p>
-
           
+LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它提供了一种代码编写良好的中间表示(IR)，可以作为多种语言的后端，还可以提供与变成语言无关的优化和针对多种cpu的代码生成功能。LLVM的主要架构如下：
+
+前端：前端用来获取源代码然后将它转变为某种
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/07/11/基于LLVM的代码混淆/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
