@@ -95,7 +95,8 @@
 <meta property="og:description" content="LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它提供了一种代码编写良好的中间表示(IR)，可以作为多种语言的后端，还可以提供与变成语言无关的优化和针对多种cpu的代码生成功能。LLVM的主要架构如下：  前端：前端用来获取源代码然后将它转变为某种中间表示，我们可以选择不同的编译器来作为LLVM的前端，如gcc，clang。 Pass：Pass用">
 <meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
 <meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/llvm-1.png">
-<meta property="og:updated_time" content="2017-07-12T15:01:21.000Z">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/llvm-module.png">
+<meta property="og:updated_time" content="2017-07-12T15:30:03.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="基于LLVM的代码混淆">
 <meta name="twitter:description" content="LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它提供了一种代码编写良好的中间表示(IR)，可以作为多种语言的后端，还可以提供与变成语言无关的优化和针对多种cpu的代码生成功能。LLVM的主要架构如下：  前端：前端用来获取源代码然后将它转变为某种中间表示，我们可以选择不同的编译器来作为LLVM的前端，如gcc，clang。 Pass：Pass用">
@@ -363,11 +364,12 @@
 <li>可读文本(以<code>.ll</code>结尾的文件)</li>
 <li>内存形式</li>
 </ol>
-<p>IR有个重要的特性 <strong>SSA(Static Single Assignment)</strong>：变量只会被使用一次（但是可以重复store赋值）这样可以方便了数据流分析</p>
+<p>IR有个重要的特性 <strong>SSA(Static Single Assignment)</strong>：变量只会被使用一次（但是可以重复store赋值const）这样可以方便了数据流分析</p>
 <p>全局变量是<strong>@</strong>局部变量是<strong>%</strong>，至于simbol name随意，数字、字母啥都行，而且没有数量上限</p>
 <p>IR有四大要素 Module Function BasicBlock 和 Instruction</p>
 <h3 id="Module"><a href="#Module" class="headerlink" title="Module"></a>Module</h3><p>IR的顶层由Module组成，正常一个.c .cpp .m文件都会被编译成一个Module。</p>
 <p>Module主要由Function组成，其次还包括全局变量、外部函数原型、数据结构的申明</p>
+<p>看一张Module的截图：<br><img src="http://osvtd0cnl.bkt.clouddn.com/llvm-module.png" alt=""></p>
 <h3 id="Function"><a href="#Function" class="headerlink" title="Function"></a>Function</h3><p>Function则是有BasicBlock组成，且必有一个<strong>Entry</strong> BasicBlock</p>
 <p>每个Function都有属性Attribute，可以通过源码给Function添加属性。后续Pass优化的时候会参考方法的属性。如<code>optsize</code>、<code>inline</code></p>
 <h3 id="BasicBlock"><a href="#BasicBlock" class="headerlink" title="BasicBlock"></a>BasicBlock</h3><p>BB是一串连续的代码块，入口到出口不会有jump。<br>出口必须jump其他的BB或者return<br>Function有个特殊的BB，lable叫<code>Entry</code>，所有的BB都不能jump到<code>Entry</code></p>
@@ -376,7 +378,8 @@
 <p>而Pass可以分为三个级别ModulePass、FunctionPass、BasicBlockPass。</p>
 <p>我们可以通过IPO里面的<code>PassManagerBuilder.cpp</code>中的<code>populateXXXPass</code>添加注册相应级别的Pass。</p>
 <p>参考了<a href="https://github.com/obfuscator-llvm/obfuscator" target="_blank" rel="external">OLLVM开源项目</a>，正式进入重点</p>
-<h3 id="BCF-Bogus-Control-Flow"><a href="#BCF-Bogus-Control-Flow" class="headerlink" title="BCF(Bogus Control Flow)"></a>BCF(Bogus Control Flow)</h3><h3 id="FLA-Flattening-Control-Flow"><a href="#FLA-Flattening-Control-Flow" class="headerlink" title="FLA(Flattening Control Flow)"></a>FLA(Flattening Control Flow)</h3><h3 id="SUB"><a href="#SUB" class="headerlink" title="SUB"></a>SUB</h3><h2 id="字符串混淆"><a href="#字符串混淆" class="headerlink" title="字符串混淆"></a>字符串混淆</h2><h2 id="符号混淆"><a href="#符号混淆" class="headerlink" title="符号混淆"></a>符号混淆</h2><p>…loading…</p>
+<h3 id="BCF-Bogus-Control-Flow"><a href="#BCF-Bogus-Control-Flow" class="headerlink" title="BCF(Bogus Control Flow)"></a>BCF(Bogus Control Flow)</h3><p>BCF的核心是<strong>Opaque Predicate</strong><br>通读一点就是<code>x^2&gt;=0</code></p>
+<h3 id="FLA-Flattening-Control-Flow"><a href="#FLA-Flattening-Control-Flow" class="headerlink" title="FLA(Flattening Control Flow)"></a>FLA(Flattening Control Flow)</h3><h3 id="SUB"><a href="#SUB" class="headerlink" title="SUB"></a>SUB</h3><h2 id="字符串混淆"><a href="#字符串混淆" class="headerlink" title="字符串混淆"></a>字符串混淆</h2><h2 id="符号混淆"><a href="#符号混淆" class="headerlink" title="符号混淆"></a>符号混淆</h2><p>…loading…</p>
 
       
     </div>
@@ -403,6 +406,22 @@
         
       
 
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/07/23/sizeof的使用/" rel="prev" title="sizeof的使用">
+                sizeof的使用 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
       
 
       
@@ -471,7 +490,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-count">2</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -480,7 +499,7 @@
           
             <div class="site-state-item site-state-categories">
               <a href="/categories">
-                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-count">2</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
