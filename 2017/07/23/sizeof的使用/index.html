@@ -93,7 +93,7 @@
 <meta property="og:url" content="http://127.0.0.1/2017/07/23/sizeof的使用/index.html">
 <meta property="og:site_name" content="Ph.D.5的博客">
 <meta property="og:description" content="基本使用 测试环境 Mac OS X 10.12  首先，sizeof并不是方法，而是keyword sizeof(char)-&amp;gt;1 sizeof(short)-&amp;gt;2 sizeof(int)-&amp;gt;4 sizeof(float)-&amp;gt;4 sizeof(double)-&amp;gt;8 sizeof(char a[4])-&amp;gt;16 sizeof(char *a)-&amp;gt;64 数组的">
-<meta property="og:updated_time" content="2017-07-23T10:03:20.000Z">
+<meta property="og:updated_time" content="2017-07-23T13:39:54.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="sizeof的使用">
 <meta name="twitter:description" content="基本使用 测试环境 Mac OS X 10.12  首先，sizeof并不是方法，而是keyword sizeof(char)-&amp;gt;1 sizeof(short)-&amp;gt;2 sizeof(int)-&amp;gt;4 sizeof(float)-&amp;gt;4 sizeof(double)-&amp;gt;8 sizeof(char a[4])-&amp;gt;16 sizeof(char *a)-&amp;gt;64 数组的">
@@ -357,8 +357,11 @@
 <p>数组的长度就是sizeof(元素)*数组长度<br>指针的长度则是地址长度</p>
 <h2 id="struct内存对齐"><a href="#struct内存对齐" class="headerlink" title="struct内存对齐"></a>struct内存对齐</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">struct MyStruct &#123;</div><div class="line">    char c;</div><div class="line">    int i;</div><div class="line">    double j;</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
 <p><code>sizeof(MyStruct)</code>的值并不是<code>sizeof(char)+sizeof(int)+sizeof(double)</code></p>
-<p>因为内存中的数据都是<strong>对齐</strong>的，不能一个struct中，第1个字节分配给char c，第2到第5分配给int i… （计算机也是有强迫症滴）默认情况下，是以“当前”最大的那个元素的长度对齐。</p>
+<p>因为内存中的数据都是<strong>对齐</strong>的，不能一个struct中，第1个字节分配给char c，第2到第5分配给int i… （计算机也是有强迫症滴）默认情况下，是以“当前”最大的那个元素的长度对齐。<strong>整个Struct的地址必须是最大字节的整数倍</strong></p>
 <p>在分配第一个字节给c后，再分配给i空间时，需要对齐，也就是说i在struct中的偏移必须是sizeof(int)的整数倍。所以，会自动填充3个字节。这时候已经分配了1+3+4个字节了。</p>
+<blockquote>
+<p>有看到资料说填充的数据是随机的…？但是自己测试并不是</p>
+</blockquote>
 <p>到给j分配空间了，前面已经分配了8个字节，sizeof(double)正好也是8，所以可以不用填充，直接分配。</p>
 <p>最终MyStruct的size是1+3+4+8=16</p>
 <p>现在调整一下struct的成员的顺序：</p>
