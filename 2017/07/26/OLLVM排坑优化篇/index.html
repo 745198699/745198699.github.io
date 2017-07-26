@@ -87,15 +87,16 @@
 
 
 
-<meta name="description" content="一只萌新的程序猿的随笔">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Ph.D.5的博客">
-<meta property="og:url" content="http://127.0.0.1/index.html">
+<meta name="description" content="BCF模块BCF的主要流程是：  split clone 畸变clone 插入不透明谓词 调整start orig altered三者关系  其中split和clone是出问题的重灾区 unmatched subprogramclone时，会统计原始块的信息，然后对变量remap，将变量的引用改为当前块的。此时会出现unmatched subprogram between llvm.dbg.val">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OLLVM排坑优化篇">
+<meta property="og:url" content="http://127.0.0.1/2017/07/26/OLLVM排坑优化篇/index.html">
 <meta property="og:site_name" content="Ph.D.5的博客">
-<meta property="og:description" content="一只萌新的程序猿的随笔">
+<meta property="og:description" content="BCF模块BCF的主要流程是：  split clone 畸变clone 插入不透明谓词 调整start orig altered三者关系  其中split和clone是出问题的重灾区 unmatched subprogramclone时，会统计原始块的信息，然后对变量remap，将变量的引用改为当前块的。此时会出现unmatched subprogram between llvm.dbg.val">
+<meta property="og:updated_time" content="2017-07-26T15:36:29.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Ph.D.5的博客">
-<meta name="twitter:description" content="一只萌新的程序猿的随笔">
+<meta name="twitter:title" content="OLLVM排坑优化篇">
+<meta name="twitter:description" content="BCF模块BCF的主要流程是：  split clone 畸变clone 插入不透明谓词 调整start orig altered三者关系  其中split和clone是出问题的重灾区 unmatched subprogramclone时，会统计原始块的信息，然后对变量remap，将变量的引用改为当前块的。此时会出现unmatched subprogram between llvm.dbg.val">
 
 
 
@@ -123,13 +124,13 @@
 
 
 
-  <link rel="canonical" href="http://127.0.0.1/"/>
+  <link rel="canonical" href="http://127.0.0.1/2017/07/26/OLLVM排坑优化篇/"/>
 
 
 
 
 
-  <title> Ph.D.5的博客 </title>
+  <title> OLLVM排坑优化篇 | Ph.D.5的博客 </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -154,9 +155,7 @@
     
   
 
-  <div class="container one-collumn sidebar-position-left 
-   page-home 
- ">
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -239,9 +238,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -271,10 +270,7 @@
             
             
               
-                
-                <a class="post-title-link" href="/2017/07/26/OLLVM排坑优化篇/" itemprop="url">
-                  OLLVM排坑优化篇
-                </a>
+                OLLVM排坑优化篇
               
             
           </h1>
@@ -347,35 +343,70 @@
       
 
       
-        
-          
-          BCF模块BCF的主要流程是：
+        <h2 id="BCF模块"><a href="#BCF模块" class="headerlink" title="BCF模块"></a>BCF模块</h2><p>BCF的主要流程是：</p>
+<ol>
+<li>split</li>
+<li>clone</li>
+<li>畸变clone</li>
+<li>插入不透明谓词</li>
+<li>调整start orig altered三者关系</li>
+</ol>
+<p>其中split和clone是出问题的重灾区</p>
+<h3 id="unmatched-subprogram"><a href="#unmatched-subprogram" class="headerlink" title="unmatched subprogram"></a>unmatched subprogram</h3><p>clone时，会统计原始块的信息，然后对变量remap，将变量的引用改为当前块的。此时会出现<strong>unmatched subprogram between llvm.dbg.value and !dbg</strong></p>
+<p><code>void @llvm.dbg.value(metadata, i64, metadata, metadata)</code><br>这个函数当local variable被set new value时会被调用。<br>参数1：被metadata包装的new value<br>参数2：local value 中的offset<br>参数3：local variable<br>参数4：complex expression</p>
+<p>其中参数3是<strong>DILocalVariable</strong>类型 表示源码中的局部变量，内部有几个字段<br>name: 源码中这个变量的名字<br>arg：如果不是0，则表示他是一个子程序subprogram的参数，他会在DISubprogram的variables字段中<br>line：行号<br>type.scope.file…</p>
+<p><strong>DISubprogram</strong>表示源码中的方法，他会被使用!dbg attach在方法的define后面</p>
+<p>verify机制中，要求llvm.dbg.value的第三个参数和后面的!dbg的subprogram一致。然而，clone-remap后两个subprogram内容一样，但是编号不一样。</p>
+<blockquote>
+<p>解决方法</p>
+</blockquote>
+<ol>
+<li>clone的时候不去clone <code>tail call @llvm.dbg.value</code></li>
+<li>remap的时候不去修改orig中<code>tail call @llvm.dbg.value</code>信息</li>
+</ol>
+<h3 id="miss-dgb-loc"><a href="#miss-dgb-loc" class="headerlink" title="miss dgb loc"></a>miss dgb loc</h3><p>这个问题有由于上个问题不当的解决方案导致的。</p>
+<p>如果不clone llvm.dbg.value会导致orig和altered指令数量不一样，在处理attach loc的时候会出差错。</p>
+<h3 id="landing-pad"><a href="#landing-pad" class="headerlink" title="landing pad"></a>landing pad</h3><p>先看看IR中的<strong>invoke</strong>指令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;result&gt; = invoke [cconv] [ret attrs] &lt;ty&gt;|&lt;fnty&gt; &lt;fnptrval&gt;(&lt;function args&gt;) </div><div class="line">[fn attrs] [operand bundles] to label &lt;normal label&gt; unwind label &lt;exception label&gt;</div></pre></td></tr></table></figure>
+<p>最后的 unwind label <exception label=""> </exception></p>
+<p>The <strong>exception</strong> label is a landing pad for the exception. As such, <strong>exception</strong> label is required to have the “<strong>landingpad</strong>” instruction, which contains the information about the behavior of the program after unwinding happens</p>
+<p>在bcf中，会对一个basicblock先split，然后clone后面的内容。<br>切分的时候，会定位第一个非dbg非phi非lifetime的指令。<br>但是，对于landing的bb，开始的指令必须是<strong>landingpad</strong></p>
+<blockquote>
+<p>解决方法 </p>
+</blockquote>
+<ol>
+<li>split的时候跳过EHPad指令</li>
+</ol>
+<h3 id="Opaque-Predicate"><a href="#Opaque-Predicate" class="headerlink" title="Opaque Predicate"></a>Opaque Predicate</h3><p>随机选择多种不透明谓词，如简单的x^2&gt;=0<br>x采用globalVariable，可以随机取值</p>
+<p>但是得注意x乘法运行可能会导致整数溢出，从而导致不透明谓词不再恒真。</p>
+<blockquote>
+<p>优化方向</p>
+</blockquote>
+<ol>
+<li>现在经过不透明谓词后，永远是true调用原逻辑，false是假逻辑，可以优化真假选择也是随机的；</li>
+<li>clone部门的逻辑和真逻辑很像，虽然有畸变，但是效果有待加强</li>
+</ol>
+<h2 id="fla模块"><a href="#fla模块" class="headerlink" title="fla模块"></a>fla模块</h2><p>原逻辑中如果出现了for运行会导致for的body进不去。</p>
+<p>for的逻辑处理错误:<br>分割出Entry后，然后Entry会设置一个init SwtichVar，进入for-switch循环。<br>但是初始值对应的BB出了问题。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>为了使用CloneBasicBlock，而<code>#include &quot;llvm/Transforms/Utils/Cloning.h&quot;</code><br>内部会用到Result <code>R(AM.getResult&lt;TargetLibraryAnalysis&gt;(F));</code><br>在CryptoUtils里面<code>#define R(x, n) (((x) &amp; 0xFFFFFFFFUL) &gt;&gt; (n))</code><br>从而冲突了，因此调整两个include的顺序，保证Cloning.h在CryptoUtils.h的前头，也可以修改define R1(x,n)…</p>
+<blockquote>
+<p>这个问题好像在官方4.0也修复了</p>
+</blockquote>
 
-split
-clone
-畸变clone
-插入不透明谓词
-调整start orig altered三者关系
-
-其中split和clone是出问题的重灾区
-unmatched subprogramclone时，会统计原始块的信息，然后对变量remap，将变量的引用改为当
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/07/26/OLLVM排坑优化篇/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
       
     </div>
 
     <div>
       
+        
+
+      
     </div>
 
     <div>
+      
+        
+
       
     </div>
 
@@ -384,325 +415,38 @@ unmatched subprogramclone时，会统计原始块的信息，然后对变量rema
       
 
       
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://127.0.0.1/2017/07/23/sizeof的使用/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Ph.D.5">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Ph.D.5的博客">
-    </span>
-
-    
-      <header class="post-header">
-
         
-        
-          <h1 class="post-title" itemprop="name headline">
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
+              <a href="/2017/07/23/sizeof的使用/" rel="next" title="sizeof的使用">
+                <i class="fa fa-chevron-left"></i> sizeof的使用
+              </a>
             
-              
-                
-                <a class="post-title-link" href="/2017/07/23/sizeof的使用/" itemprop="url">
-                  sizeof的使用
-                </a>
-              
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-23T17:16:36+08:00">
-                2017-07-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C-C/" itemprop="url" rel="index">
-                    <span itemprop="name">C/C++</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-          基本使用
-测试环境 Mac OS X 10.12
-
-首先，sizeof并不是方法，而是keyword
-sizeof(char)-&gt;1
-sizeof(short)-&gt;2
-sizeof(int)-&gt;4
-sizeof(float)-&gt;4
-sizeof(double)-&gt;8
-s
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/07/23/sizeof的使用/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </article>
 
 
-    
-      
 
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://127.0.0.1/2017/07/11/基于LLVM的代码混淆/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Ph.D.5">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Ph.D.5的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2017/07/11/基于LLVM的代码混淆/" itemprop="url">
-                  基于LLVM的代码混淆
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-11T22:55:18+08:00">
-                2017-07-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/llvm/" itemprop="url" rel="index">
-                    <span itemprop="name">llvm</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-          
-LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它提供了一种代码编写良好的中间表示(IR)，可以作为多种语言的后端，还可以提供与变成语言无关的优化和针对多种cpu的代码生成功能。LLVM的主要架构如下：
-
-前端：前端用来获取源代码然后将它转变为某种
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/07/11/基于LLVM的代码混淆/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
+    <div class="post-spread">
       
     </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-  </section>
-
-  
+  </div>
 
           
           </div>
@@ -710,6 +454,10 @@ LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它
 
 
           
+  <div class="comments" id="comments">
+    
+  </div>
+
 
         </div>
         
@@ -729,8 +477,17 @@ LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg"
@@ -792,6 +549,22 @@ LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#BCF模块"><span class="nav-number">1.</span> <span class="nav-text">BCF模块</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#unmatched-subprogram"><span class="nav-number">1.1.</span> <span class="nav-text">unmatched subprogram</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#miss-dgb-loc"><span class="nav-number">1.2.</span> <span class="nav-text">miss dgb loc</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#landing-pad"><span class="nav-number">1.3.</span> <span class="nav-text">landing pad</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Opaque-Predicate"><span class="nav-number">1.4.</span> <span class="nav-text">Opaque Predicate</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fla模块"><span class="nav-number">2.</span> <span class="nav-text">fla模块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#其他"><span class="nav-number">3.</span> <span class="nav-text">其他</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -897,6 +670,10 @@ LLVM简介LLVM(low level virtual machine)是一个先进的编译器框架，它
   
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
 
   
 
