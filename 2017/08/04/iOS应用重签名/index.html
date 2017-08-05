@@ -97,7 +97,7 @@
 <meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/WX20170804-235315@2x.png">
 <meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/WX20170804-235451@2x.png">
 <meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/WX20170804-235709@2x.png">
-<meta property="og:updated_time" content="2017-08-05T01:22:43.000Z">
+<meta property="og:updated_time" content="2017-08-05T02:42:20.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="iOS应用重签名">
 <meta name="twitter:description" content="引言重打包这种事情在Android下面很容易，但是在iOS就要稍微困难些。 有了重打包我们可以给已有的应用添加自己的插件，并安装到未越狱的设备上。 不过也有局限性，毕竟没有越狱，inline hook肯定是不好使了，不过method swizzling和fishhook还是兹磁的。然后，我们可以注入一些很强大的dylib，如frida、Reveal等。 然后，重签名已经有很成熟的开源工具了：ios">
@@ -380,7 +380,6 @@
 <p>我们从app store下载下来的应用中<code>get-task-allow</code>是NO，所以我们要想通过xcode去调试。需要重签名。</p>
 <p>此外，需要删除Info.plist中<code>CFBundleResourceSpecification</code>字段</p>
 <p>重打包完成后，在xcode中Debug-&gt;Attach to Process即可调试第三方应用。</p>
-<h2 id="iOS签名机制"><a href="#iOS签名机制" class="headerlink" title="iOS签名机制"></a>iOS签名机制</h2><p>待续…</p>
 
       
     </div>
@@ -548,7 +547,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#准备工作"><span class="nav-number">2.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重签名"><span class="nav-number">3.</span> <span class="nav-text">重签名</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-解压ipa"><span class="nav-number">3.1.</span> <span class="nav-text">1.解压ipa</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-修改应用程序"><span class="nav-number">3.2.</span> <span class="nav-text">2.修改应用程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-获取provision和entitlements"><span class="nav-number">3.3.</span> <span class="nav-text">3.获取provision和entitlements</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-查看证书信息"><span class="nav-number">3.4.</span> <span class="nav-text">4.查看证书信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-修改文件"><span class="nav-number">3.5.</span> <span class="nav-text">5.修改文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-开始签名"><span class="nav-number">3.6.</span> <span class="nav-text">6.开始签名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-安装应用"><span class="nav-number">3.7.</span> <span class="nav-text">7.安装应用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Xcode调试第三方应用"><span class="nav-number">4.</span> <span class="nav-text">Xcode调试第三方应用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iOS签名机制"><span class="nav-number">5.</span> <span class="nav-text">iOS签名机制</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#准备工作"><span class="nav-number">2.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重签名"><span class="nav-number">3.</span> <span class="nav-text">重签名</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-解压ipa"><span class="nav-number">3.1.</span> <span class="nav-text">1.解压ipa</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-修改应用程序"><span class="nav-number">3.2.</span> <span class="nav-text">2.修改应用程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-获取provision和entitlements"><span class="nav-number">3.3.</span> <span class="nav-text">3.获取provision和entitlements</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-查看证书信息"><span class="nav-number">3.4.</span> <span class="nav-text">4.查看证书信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-修改文件"><span class="nav-number">3.5.</span> <span class="nav-text">5.修改文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-开始签名"><span class="nav-number">3.6.</span> <span class="nav-text">6.开始签名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-安装应用"><span class="nav-number">3.7.</span> <span class="nav-text">7.安装应用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Xcode调试第三方应用"><span class="nav-number">4.</span> <span class="nav-text">Xcode调试第三方应用</span></a></li></ol></div>
             
 
           </div>
