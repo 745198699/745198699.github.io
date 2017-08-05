@@ -1,0 +1,880 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="引言之前学习的过程中有了解了Mach-O文件格式，只是大体了解了Header、Load Command、Segment以及Section，现在深入探索一下内部一些Segment和Section的内容。顺便复习一下符号绑定的一些知识。 Mach-O整体结构首先，Mach-O是Mac OS以及iOS平台的可执行文件，类似于Linux下的ELF还有Windows下的PE。（当然还有Fat，多个Mach-">
+<meta property="og:type" content="article">
+<meta property="og:title" content="解读Macho文件&amp;符号绑定&amp;Class-Dump">
+<meta property="og:url" content="http://127.0.0.1/2017/08/05/解读Macho文件/index.html">
+<meta property="og:site_name" content="Ph.D.5的博客">
+<meta property="og:description" content="引言之前学习的过程中有了解了Mach-O文件格式，只是大体了解了Header、Load Command、Segment以及Section，现在深入探索一下内部一些Segment和Section的内容。顺便复习一下符号绑定的一些知识。 Mach-O整体结构首先，Mach-O是Mac OS以及iOS平台的可执行文件，类似于Linux下的ELF还有Windows下的PE。（当然还有Fat，多个Mach-">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho1.gif">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho2.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho3.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho4.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho5.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho6.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho7.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/mach08.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho8.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho9.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho10.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho11.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho12.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/macho13.png">
+<meta property="og:updated_time" content="2017-08-05T06:42:31.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="解读Macho文件&amp;符号绑定&amp;Class-Dump">
+<meta name="twitter:description" content="引言之前学习的过程中有了解了Mach-O文件格式，只是大体了解了Header、Load Command、Segment以及Section，现在深入探索一下内部一些Segment和Section的内容。顺便复习一下符号绑定的一些知识。 Mach-O整体结构首先，Mach-O是Mac OS以及iOS平台的可执行文件，类似于Linux下的ELF还有Windows下的PE。（当然还有Fat，多个Mach-">
+<meta name="twitter:image" content="http://osvtd0cnl.bkt.clouddn.com/macho1.gif">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://127.0.0.1/2017/08/05/解读Macho文件/"/>
+
+
+
+
+
+  <title> 解读Macho文件&符号绑定&Class-Dump | Ph.D.5的博客 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Ph.D.5的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://127.0.0.1/2017/08/05/解读Macho文件/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Ph.D.5">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ph.D.5的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                解读Macho文件&符号绑定&Class-Dump
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-05T11:05:28+08:00">
+                2017-08-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS逆向与安全/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS逆向与安全</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>之前学习的过程中有了解了Mach-O文件格式，只是大体了解了Header、Load Command、Segment以及Section，现在深入探索一下内部一些Segment和Section的内容。顺便复习一下符号绑定的一些知识。</p>
+<h2 id="Mach-O整体结构"><a href="#Mach-O整体结构" class="headerlink" title="Mach-O整体结构"></a>Mach-O整体结构</h2><p>首先，Mach-O是Mac OS以及iOS平台的可执行文件，类似于Linux下的ELF还有Windows下的PE。（当然还有Fat，多个Mach-O的结合体）</p>
+<p>整体的架构分为三个部分：</p>
+<ol>
+<li>Header：指出文件的一些熟悉，如CPU架构、LC的数量大小、大小端、Flag等。</li>
+<li>Load Commands：告诉dyld如何加载Segment，VM地址、权限等。</li>
+<li>Segments：具体的内容了，一个Segment可以由多个Section组成。</li>
+</ol>
+<p>附上一张很经典的图</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho1.gif" alt=""></p>
+<h3 id="Header"><a href="#Header" class="headerlink" title="Header"></a>Header</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">struct mach_header_64 &#123;</div><div class="line">    uint32_t		magic; </div><div class="line">    cpu_type_t		cputype; </div><div class="line">    cpu_subtype_t	cpusubtype;    </div><div class="line">    uint32_t	filetype;    </div><div class="line">    uint32_t	ncmds;        </div><div class="line">    uint32_t	sizeofcmds;    </div><div class="line">	uint32_t	flags;        </div><div class="line">    uint32_t	reserved;    </div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p>magic：魔数 32bit是<code>FEEDFACE</code> 64bit是<code>FEEDFACF</code> 可能会因为大小端的缘故，逆序</p>
+<p>cpu(sub)type：cpu架构的类型</p>
+<p>filetype：execute、dylib、.o、bundle、dyld、核心转储等</p>
+<blockquote>
+<p>静态a库其实是多个.o或.bc的结合体，不能算作单个文件</p>
+</blockquote>
+<p>ncmds和sizeofcmds：LC的数量和所占文件的大小</p>
+<p>flags：如PIE等熟悉</p>
+<h3 id="Load-Command"><a href="#Load-Command" class="headerlink" title="Load Command"></a>Load Command</h3><p>内容如下：</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho2.png" alt=""></p>
+<ul>
+<li><p><code>LC_SEGMENT</code><br>指定后续的各Segment加载的vm偏移、大小，文件的偏移和大小，初始权限、最高权限，包含的section的数量等。</p>
+</li>
+<li><p><code>LC_LOAD_DYLINKER</code><br>指定链接器的路径，通常是默认的<code>/usr/bin/dyld</code></p>
+</li>
+<li><p><code>LC_XXX_VERSION</code><br>指定最小的手机版本以及文件的版本</p>
+</li>
+<li><p><code>LC_ENCRYPTION_INFO</code><br>里面有个<code>crypt id</code> 通常通过这个判断文件是否有加密，是否需要脱壳</p>
+</li>
+<li><p><code>LC_CODE_SIGNATURE</code><br>指定了签名段的文件偏移</p>
+</li>
+</ul>
+<h3 id="Segment"><a href="#Segment" class="headerlink" title="Segment"></a>Segment</h3><p>主要的Segment如下：</p>
+<ul>
+<li><p><code>__TEXT</code> 代码段/只读数据段</p>
+</li>
+<li><p><code>__PAGEZERO</code> Catch访问NULL指针的非法操作的段</p>
+</li>
+<li><p><code>__DATA</code> 数据段</p>
+</li>
+<li><p><code>__LINKEDIT</code> 包含需要被动态链接器使用的信息，包括符号表、字符串表、重定位项表等。</p>
+</li>
+<li><p><code>__OBJC</code> 包含会被Objective Runtime使用到的一些数据。</p>
+</li>
+</ul>
+<p>Segment内部按照功能可以划分成多个Section，之所以把多个section合并成一个Segment管理，是因为：</p>
+<ol>
+<li>section功能类似，如都是表示代码信息，或数据信息</li>
+<li><strong>权限相同</strong> dyld可以直接将整个segment统一装载如内存，赋予统一属性</li>
+<li>更好的内存对齐，如果不同权限的section混杂着载入内存，section之间就需要填充去对齐。</li>
+</ol>
+<h3 id="section"><a href="#section" class="headerlink" title="section"></a>section</h3><p>一探究竟，各section的功能</p>
+<h4 id="TEXT中的Sections"><a href="#TEXT中的Sections" class="headerlink" title="TEXT中的Sections"></a>TEXT中的Sections</h4><p>TEXT是代码区，权限为：<strong>R-X</strong> </p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th style="text-align:left">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TEXT._text</td>
+<td style="text-align:left">可执行的机器码</td>
+</tr>
+<tr>
+<td>TEXT._cstring</td>
+<td style="text-align:left">c字符串</td>
+</tr>
+<tr>
+<td>TEXT.<code>_objc_methname</code></td>
+<td style="text-align:left">OC的selector的名字（注意，这里不是cstring的索引，而是实打实的字符串）</td>
+</tr>
+<tr>
+<td>TEXT.<code>_objc_classname</code></td>
+<td style="text-align:left">OC的clas的名字（实打实的字符串）</td>
+</tr>
+<tr>
+<td>TEXT._const</td>
+<td style="text-align:left">初始化后的常量</td>
+</tr>
+<tr>
+<td>TEXT._stubs</td>
+<td style="text-align:left">符号桩：本质是跳转指令，跳到DATA中的la_symbol_ptr懒加载表</td>
+</tr>
+<tr>
+<td>TEXT._stub_heler</td>
+<td style="text-align:left">桩辅助函数，后面再做详细分析</td>
+</tr>
+</tbody>
+</table>
+<h4 id="DATA中的Sections"><a href="#DATA中的Sections" class="headerlink" title="DATA中的Sections"></a>DATA中的Sections</h4><p>DATA是数据区，权限为：<strong>RW-</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th style="text-align:left">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DATA._data</td>
+<td style="text-align:left">初始化后的非常量数据</td>
+</tr>
+<tr>
+<td>DATA._const</td>
+<td style="text-align:left">未初始化的常量</td>
+</tr>
+<tr>
+<td>DATA._bss</td>
+<td style="text-align:left">未初始化的静态变量</td>
+</tr>
+<tr>
+<td>DATA._classlist</td>
+<td style="text-align:left">保存OC的class信息的地址</td>
+</tr>
+<tr>
+<td>DATA._objc_data</td>
+<td style="text-align:left">保存具体的class的信息</td>
+</tr>
+<tr>
+<td>DATA._objc_selrefs</td>
+<td style="text-align:left">selector的引用</td>
+</tr>
+<tr>
+<td>DATA._objc_classrefs</td>
+<td style="text-align:left">类引用</td>
+</tr>
+<tr>
+<td>DATA.<code>_la_symbol_ptr</code></td>
+<td style="text-align:left">lazy-binding的指针表，每个表项中的指针一开始指向stub_helper</td>
+</tr>
+<tr>
+<td>DATA.<code>_nl_symbol_ptr</code></td>
+<td style="text-align:left">非lazy-binding的指针表，每个表项中的指针都指向一个在装载过程中，被动态链机器搜索完成的符号</td>
+</tr>
+</tbody>
+</table>
+<h2 id="符号绑定"><a href="#符号绑定" class="headerlink" title="符号绑定"></a>符号绑定</h2><p>详细看看懒加载的内容：<br>之前看过《程序猿的自我修养》，了解了懒加载的技术。</p>
+<p>外部符号可以分为两种绑定的方式：</p>
+<ol>
+<li>静态链接符号解析绑定，link时链接器负责符号的解析</li>
+<li>运行时的动态绑定。 为了提高效率，采用了延迟绑定，第一次使用的时候才去绑定</li>
+</ol>
+<p>内部使用符号时，会被”引流”到<code>_stub</code>区域</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho3.png" alt=""><br>代码中调用NSStringFromClass时，会跳转到stub对应的项。内部是个跳转指令，跳转的地址则是从la_symbol_ptr中获取的。</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho4.png" alt=""><br>la_symbol_ptr的地址会指向stub_helper。这个helper类似于PLT，下面的项会跳转到首项，首项会跳转到<code>dyld_stub_binder</code>，负责外部符号的解析。</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho5.png" alt=""><br>解析完成后，会修改la_symbol_ptr，为真正的符号地址，后续再次运行时，就不会再跳到stub_helper了</p>
+<p>完成解析后，la_symbol_ptr 和 nl_symbol_ptr都可以指向正确的地址。后续符号look up的流程如下：</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho6.png" alt="偷一张fishhook里面的图"></p>
+<h2 id="OC-class信息"><a href="#OC-class信息" class="headerlink" title="OC class信息"></a>OC class信息</h2><h3 id="class-dump"><a href="#class-dump" class="headerlink" title="class dump"></a>class dump</h3><p>首先定位到DATA中的classlist</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho7.png" alt=""></p>
+<p>内部每一项是指向<code>_objc_data</code>中的具体<code>Struct _objc_class</code>的地址</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/mach08.png" alt=""></p>
+<p>内部可以获取到class的metaclass的信息也是<code>_objc_data</code>中的struct</p>
+<p><code>Struct _objc_class</code>中重要的属性是<code>data</code>，指向<code>_objc_const</code>section</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho8.png" alt=""></p>
+<p>里面有指向<code>TEST._objc_classname</code>的名字，还有指向<code>DATA._const</code>的method ivar property数据数组。就拿method来说。</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho9.png" alt=""></p>
+<p>首先会有struct说明方法是数量，下面就有对应数量的method结构体。内部会有指向<code>TEST._objc_methname</code>的名称。</p>
+<blockquote>
+<p>类方法是在metaclass data内部</p>
+</blockquote>
+<h3 id="代码中的-reciever-selector"><a href="#代码中的-reciever-selector" class="headerlink" title="代码中的[reciever selector]"></a>代码中的[reciever selector]</h3><p>“方法调用“底层都是objc_msgSend的消息转发。<br>代码里面的class 和 method 都会被解析成<strong>Reference</strong></p>
+<p>源码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">@interface MyClass : NSObject</div><div class="line">+(void) fun1;</div><div class="line">-(void) fun2;</div><div class="line">@end</div><div class="line"></div><div class="line">@implementation MyClass</div><div class="line">+(void)fun1&#123;</div><div class="line">    NSLog(@&quot;fun1&quot;);</div><div class="line">&#125;</div><div class="line">-(void)fun2&#123;</div><div class="line">    NSLog(@&quot;fun2&quot;);</div><div class="line">&#125;</div><div class="line">@end</div></pre></td></tr></table></figure>
+<h4 id="调用MyClass的类方法："><a href="#调用MyClass的类方法：" class="headerlink" title="调用MyClass的类方法："></a>调用MyClass的类方法：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">[MyClass fun1];</div></pre></td></tr></table></figure>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho10.png" alt=""></p>
+<p><code>adrp</code>指令（address page）是获取运行时的物理地址</p>
+<p>可以知道X8=0x100008D90  X9=0x100008DB0</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho11.png" alt=""></p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho12.png" alt=""></p>
+<p>追踪地址可以得知：</p>
+<ol>
+<li>classref存放的是<code>__objc_data</code>中<code>struct __objc_class</code>的地址，和classlist一样。</li>
+<li>selref存放的是<code>__objc_methname</code>的地址。</li>
+</ol>
+<p><code>objc_msgSend</code>第一个参数就是classRef，第二个参数是selRef</p>
+<h4 id="调用MyClass实例方法"><a href="#调用MyClass实例方法" class="headerlink" title="调用MyClass实例方法"></a>调用MyClass实例方法</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">MyClass *myclass = [MyClass new];</div><div class="line">[myclass fun2];</div></pre></td></tr></table></figure>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/macho13.png" alt=""></p>
+<p>首先调用了new方法，和上面调用fun1一样，就不赘述了</p>
+<p>我们知道ARM中会将返回结果返回到R0中，调用了new后会把实例的地址存放在X0，调用实例方法是，第一个参数则是实例的地址，第二个参数仍是selRef</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/08/04/iOS应用重签名/" rel="next" title="iOS应用重签名">
+                <i class="fa fa-chevron-left"></i> iOS应用重签名
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg"
+               alt="Ph.D.5" />
+          <p class="site-author-name" itemprop="name">Ph.D.5</p>
+           
+              <p class="site-description motion-element" itemprop="description">一只萌新的程序猿的随笔</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/745198699" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mach-O整体结构"><span class="nav-number">2.</span> <span class="nav-text">Mach-O整体结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Header"><span class="nav-number">2.1.</span> <span class="nav-text">Header</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Load-Command"><span class="nav-number">2.2.</span> <span class="nav-text">Load Command</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Segment"><span class="nav-number">2.3.</span> <span class="nav-text">Segment</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#section"><span class="nav-number">2.4.</span> <span class="nav-text">section</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#TEXT中的Sections"><span class="nav-number">2.4.1.</span> <span class="nav-text">TEXT中的Sections</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DATA中的Sections"><span class="nav-number">2.4.2.</span> <span class="nav-text">DATA中的Sections</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#符号绑定"><span class="nav-number">3.</span> <span class="nav-text">符号绑定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OC-class信息"><span class="nav-number">4.</span> <span class="nav-text">OC class信息</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#class-dump"><span class="nav-number">4.1.</span> <span class="nav-text">class dump</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码中的-reciever-selector"><span class="nav-number">4.2.</span> <span class="nav-text">代码中的[reciever selector]</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#调用MyClass的类方法："><span class="nav-number">4.2.1.</span> <span class="nav-text">调用MyClass的类方法：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#调用MyClass实例方法"><span class="nav-number">4.2.2.</span> <span class="nav-text">调用MyClass实例方法</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ph.D.5</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>
