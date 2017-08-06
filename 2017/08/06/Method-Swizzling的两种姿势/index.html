@@ -1,0 +1,716 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="Method？SEL？IMP？傻傻分不清Methodtypedef struct objc_method *Method; 12345struct objc_method &amp;#123;    SEL method_name;    char *method_types;    IMP method_imp;&amp;#125; Method实为objc_method的指针。内部有两个重要的成员：SEL和I">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Method Swizzling的两种姿势">
+<meta property="og:url" content="http://127.0.0.1/2017/08/06/Method-Swizzling的两种姿势/index.html">
+<meta property="og:site_name" content="Ph.D.5的博客">
+<meta property="og:description" content="Method？SEL？IMP？傻傻分不清Methodtypedef struct objc_method *Method; 12345struct objc_method &amp;#123;    SEL method_name;    char *method_types;    IMP method_imp;&amp;#125; Method实为objc_method的指针。内部有两个重要的成员：SEL和I">
+<meta property="og:updated_time" content="2017-08-06T14:53:30.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Method Swizzling的两种姿势">
+<meta name="twitter:description" content="Method？SEL？IMP？傻傻分不清Methodtypedef struct objc_method *Method; 12345struct objc_method &amp;#123;    SEL method_name;    char *method_types;    IMP method_imp;&amp;#125; Method实为objc_method的指针。内部有两个重要的成员：SEL和I">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://127.0.0.1/2017/08/06/Method-Swizzling的两种姿势/"/>
+
+
+
+
+
+  <title> Method Swizzling的两种姿势 | Ph.D.5的博客 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Ph.D.5的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://127.0.0.1/2017/08/06/Method-Swizzling的两种姿势/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Ph.D.5">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ph.D.5的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Method Swizzling的两种姿势
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-06T21:28:18+08:00">
+                2017-08-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS逆向与安全/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS逆向与安全</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Method？SEL？IMP？傻傻分不清"><a href="#Method？SEL？IMP？傻傻分不清" class="headerlink" title="Method？SEL？IMP？傻傻分不清"></a>Method？SEL？IMP？傻傻分不清</h2><h3 id="Method"><a href="#Method" class="headerlink" title="Method"></a>Method</h3><p><code>typedef struct objc_method *Method;</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">struct objc_method &#123;</div><div class="line">    SEL method_name;</div><div class="line">    char *method_types;</div><div class="line">    IMP method_imp;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Method实为objc_method的指针。内部有两个重要的成员：<code>SEL</code>和<code>IMP</code>。</p>
+<h3 id="SEL"><a href="#SEL" class="headerlink" title="SEL"></a>SEL</h3><p>方法选择器（也可以理解为方法的名字）。但是选择器是全局通用的，意思说不同类中名字相同的方法的selector的一样的。</p>
+<blockquote>
+<p>class+sel 可以确定一个方法</p>
+</blockquote>
+<h3 id="IMP"><a href="#IMP" class="headerlink" title="IMP"></a>IMP</h3><p><code>typedef id (*IMP)(id, SEL, ...);</code></p>
+<p>本质上是<strong>函数指针</strong>，指向Method的具体实现。当发起一个 ObjC 消息之后，最终它会执行的那段代码，就是由这个函数指针指定的。</p>
+<h3 id="常用接口"><a href="#常用接口" class="headerlink" title="常用接口"></a>常用接口</h3><p>顺便总结下<code>runtime.h</code>中常用的接口：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">Class objc_getClass(const char *name);</div><div class="line">Class objc_getMetaClass(const char *name);</div><div class="line">const char *class_getName(Class cls);</div><div class="line"></div><div class="line">Method class_getInstanceMethod(Class cls, SEL name);</div><div class="line">Method class_getClassMethod(Class cls, SEL name);</div><div class="line"></div><div class="line">IMP class_getMethodImplementation(Class cls, SEL name);</div><div class="line">BOOL class_respondsToSelector(Class cls, SEL sel);</div><div class="line">Method *class_copyMethodList(Class cls, unsigned int *outCount);</div><div class="line"></div><div class="line">BOOL class_conformsToProtocol(Class cls, Protocol *protocol);</div><div class="line">Protocol *class_copyProtocolList(Class cls, unsigned int *outCount);</div><div class="line"></div><div class="line">BOOL class_addMethod(Class cls, SEL name, IMP imp, const char *types);</div><div class="line">IMP class_replaceMethod(Class cls, SEL name, IMP imp, const char *types);</div><div class="line"></div><div class="line">SEL method_getName(Method m);</div><div class="line">IMP method_getImplementation(Method m);</div><div class="line">void method_exchangeImplementations(Method m1, Method m2);//!!!</div></pre></td></tr></table></figure>
+<h2 id="姿势一：exchange"><a href="#姿势一：exchange" class="headerlink" title="姿势一：exchange"></a>姿势一：exchange</h2><p>核心方法<strong><code>method_exchangeImplementations</code></strong>：<br>可以交换两个Method的实现IMP。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">+ (void)load &#123;</div><div class="line">    static dispatch_once_t onceToken;</div><div class="line">    dispatch_once(&amp;onceToken, ^&#123;</div><div class="line">        Class aClass = [self class];</div><div class="line">        </div><div class="line">        SEL originalSelector = @selector(originalMethod:);</div><div class="line">        SEL swizzledSelector = @selector(swizzleMethod:);</div><div class="line">        </div><div class="line">        Method originalMethod = class_getInstanceMethod(aClass, originalSelector);</div><div class="line">        Method swizzledMethod = class_getInstanceMethod(aClass, swizzledSelector);</div><div class="line">        </div><div class="line">        method_exchangeImplementations(originalMethod, swizzledMethod);</div><div class="line">    &#125;);</div><div class="line">    </div><div class="line">&#125;</div><div class="line"></div><div class="line">-(void)originalMethod:(int) i&#123;</div><div class="line">    NSLog(@&quot;original i:%d&quot;,i);</div><div class="line">&#125;</div><div class="line"></div><div class="line">-(void)swizzleMethod:(int)i&#123;</div><div class="line">    NSLog(@&quot;this is swizzle...&quot;);</div><div class="line">    [self swizzleMethod:i];</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<blockquote>
+<p>Method Swizzling 通常是放在+load中。+load是先于main()，当class载入时执行。而+initialize后于main()，当每次使用class的时候会调用。且+load线程安全。</p>
+</blockquote>
+<p>swizzling中像是死循环，其实exchange后内部的swizzleMethod调用会重定向到origalMethod。</p>
+<h2 id="姿势二：static-swizzleAndStore"><a href="#姿势二：static-swizzleAndStore" class="headerlink" title="姿势二：static swizzleAndStore"></a>姿势二：static swizzleAndStore</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line">typedef IMP *IMPPointer;</div><div class="line"></div><div class="line">static void MethodSwizzle(id self, SEL _cmd, int arg1);</div><div class="line">static void (*MethodOriginal)(id self, SEL _cmd, int arg1);</div><div class="line"></div><div class="line">static void MethodSwizzle(id self, SEL _cmd, int  arg1) &#123;</div><div class="line">    NSLog(@&quot;this is swizzle...&quot;);</div><div class="line">    MethodOriginal(self, _cmd, arg1);</div><div class="line">&#125;</div><div class="line"></div><div class="line">BOOL class_swizzleMethodAndStore(Class class, SEL original, IMP replacement, IMPPointer store) &#123;</div><div class="line">    IMP imp = NULL;</div><div class="line">    Method method = class_getInstanceMethod(class, original);</div><div class="line">    if (method) &#123;</div><div class="line">        const char *type = method_getTypeEncoding(method);</div><div class="line">        imp = class_replaceMethod(class, original, replacement, type);</div><div class="line">        if (!imp) &#123;</div><div class="line">            imp = method_getImplementation(method);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    if (imp &amp;&amp; store) &#123;</div><div class="line">        *store = imp;</div><div class="line">    &#125;</div><div class="line">    return (imp != NULL);</div><div class="line">&#125;</div><div class="line"></div><div class="line">@implementation MyClass</div><div class="line"></div><div class="line">+ (BOOL)swizzle:(SEL)original with:(IMP)replacement store:(IMPPointer)store &#123;</div><div class="line">    return class_swizzleMethodAndStore(self, original, replacement, store);</div><div class="line">&#125;</div><div class="line"></div><div class="line">+ (void)load &#123;</div><div class="line">    [self swizzle:@selector(originalMethod:) with:(IMP)&amp;MethodSwizzle store:(IMP *)&amp;MethodOriginal];</div><div class="line">&#125;</div><div class="line"></div><div class="line">-(void)originalMethod:(int) i&#123;</div><div class="line">    NSLog(@&quot;original i:%d&quot;,i);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>把swizzling的内容从通常的OC方法中移植到了static方法中。</p>
+<p><code>class_swizzleMethodAndStore(Class class, SEL original, IMP replacement, IMPPointer store)</code></p>
+<p>用replacement 替换class的original方法，并把原来的IMP存到static IMP* store中。</p>
+<p>具体步骤：</p>
+<ol>
+<li>调用<code>class_getInstanceMethod</code> 获取到orig Method</li>
+<li>调用<code>class_replaceMethod</code> 用传入的replacement的函数指针替换orig的IMP，并返回orig的IMP</li>
+<li>把返回的orig IMP存入static的 store IMP*中，以便replacement中的调用</li>
+</ol>
+<h2 id="两种姿势哪个更舒服呢？"><a href="#两种姿势哪个更舒服呢？" class="headerlink" title="两种姿势哪个更舒服呢？"></a>两种姿势哪个更舒服呢？</h2><h3 id="什么？-cmd？"><a href="#什么？-cmd？" class="headerlink" title="什么？_cmd？"></a>什么？_cmd？</h3><p><code>[myClass fun:1]</code> -&gt; <code>objc_msgSend(myClass, @selector(fun:),1)</code>? NOP!</p>
+<p>还有隐藏参数，一个是众所周知的<code>self</code>,另一个则是<code>_cmd</code></p>
+<p><code>[myClass fun:1]</code> -&gt; <code>objc_msgSend(self, _cmd, myClass, @selector(fun:),1)</code></p>
+<p><code>_cmd</code> 的类型是<strong>SEL</strong>，可以用<code>NSStringFromSelector(_cmd)</code>获取具体的内容，表达当前方法的方法名。</p>
+<p>在姿势一 exchangeMethod中，<code>_cmd</code>的值是swizzleMethod，而不是orignalMethod。还记得那个“死循环”吗？之前原来逻辑时，其实调用的是<code>[xxx swizzleMethod:]</code>，也就是<code>objc_msgSend(self, @selector(swizzleMethod:), ...)</code>。如果在orig中使用了<code>_cmd</code>，则内容不会是意料中的origMethod。而在姿势二中，我们使用的OC调用并没有改变，我们是从底层直接replace的而不是exchange，所以<code>_cmd</code>还是orig。</p>
+<p>另一方面，我们可以通过_cmd判断方法有没有被Hook。</p>
+<h3 id="conflict"><a href="#conflict" class="headerlink" title="conflict"></a>conflict</h3><p>姿势一中，需要添加一个OC方法，这样就会存在重名的可能性，而姿势二是通过static 函数指针实现的，则不会冲突</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/08/05/解读Macho文件/" rel="next" title="解读Macho文件&符号绑定&Class-Dump">
+                <i class="fa fa-chevron-left"></i> 解读Macho文件&符号绑定&Class-Dump
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg"
+               alt="Ph.D.5" />
+          <p class="site-author-name" itemprop="name">Ph.D.5</p>
+           
+              <p class="site-description motion-element" itemprop="description">一只萌新的程序猿的随笔</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/745198699" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Method？SEL？IMP？傻傻分不清"><span class="nav-number">1.</span> <span class="nav-text">Method？SEL？IMP？傻傻分不清</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Method"><span class="nav-number">1.1.</span> <span class="nav-text">Method</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SEL"><span class="nav-number">1.2.</span> <span class="nav-text">SEL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IMP"><span class="nav-number">1.3.</span> <span class="nav-text">IMP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#常用接口"><span class="nav-number">1.4.</span> <span class="nav-text">常用接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#姿势一：exchange"><span class="nav-number">2.</span> <span class="nav-text">姿势一：exchange</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#姿势二：static-swizzleAndStore"><span class="nav-number">3.</span> <span class="nav-text">姿势二：static swizzleAndStore</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#两种姿势哪个更舒服呢？"><span class="nav-number">4.</span> <span class="nav-text">两种姿势哪个更舒服呢？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么？-cmd？"><span class="nav-number">4.1.</span> <span class="nav-text">什么？_cmd？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#conflict"><span class="nav-number">4.2.</span> <span class="nav-text">conflict</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ph.D.5</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>
