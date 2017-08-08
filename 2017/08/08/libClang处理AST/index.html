@@ -1,0 +1,747 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="AST的获取-ast-dump的基本使用我们可以通过clang的命令获取AST的直观图，方便观察分析，具体的命令如下： clang -fmodules -fsyntax-only -Xclang -ast-dump xxx.m  -fmodules：Enable the ‘modules’ language feature -fsyntax-only：preprocess+“parser and">
+<meta property="og:type" content="article">
+<meta property="og:title" content="libClang处理AST">
+<meta property="og:url" content="http://127.0.0.1/2017/08/08/libClang处理AST/index.html">
+<meta property="og:site_name" content="Ph.D.5的博客">
+<meta property="og:description" content="AST的获取-ast-dump的基本使用我们可以通过clang的命令获取AST的直观图，方便观察分析，具体的命令如下： clang -fmodules -fsyntax-only -Xclang -ast-dump xxx.m  -fmodules：Enable the ‘modules’ language feature -fsyntax-only：preprocess+“parser and">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/libclang0.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/libclang1.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/libclang2.png">
+<meta property="og:updated_time" content="2017-08-08T14:13:34.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="libClang处理AST">
+<meta name="twitter:description" content="AST的获取-ast-dump的基本使用我们可以通过clang的命令获取AST的直观图，方便观察分析，具体的命令如下： clang -fmodules -fsyntax-only -Xclang -ast-dump xxx.m  -fmodules：Enable the ‘modules’ language feature -fsyntax-only：preprocess+“parser and">
+<meta name="twitter:image" content="http://osvtd0cnl.bkt.clouddn.com/libclang0.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://127.0.0.1/2017/08/08/libClang处理AST/"/>
+
+
+
+
+
+  <title> libClang处理AST | Ph.D.5的博客 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Ph.D.5的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://127.0.0.1/2017/08/08/libClang处理AST/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Ph.D.5">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ph.D.5的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                libClang处理AST
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-08T22:12:49+08:00">
+                2017-08-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/llvm/" itemprop="url" rel="index">
+                    <span itemprop="name">llvm</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="AST的获取"><a href="#AST的获取" class="headerlink" title="AST的获取"></a>AST的获取</h2><h3 id="ast-dump的基本使用"><a href="#ast-dump的基本使用" class="headerlink" title="-ast-dump的基本使用"></a>-ast-dump的基本使用</h3><p>我们可以通过clang的命令获取AST的直观图，方便观察分析，具体的命令如下：</p>
+<p><code>clang -fmodules -fsyntax-only -Xclang -ast-dump xxx.m</code></p>
+<blockquote>
+<p>-fmodules：Enable the ‘modules’ language feature</p>
+<p>-fsyntax-only：preprocess+“parser and type checking” </p>
+</blockquote>
+<p>看个🌰吧：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">// MyClass.h</div><div class="line">#import &lt;Foundation/Foundation.h&gt;</div><div class="line"></div><div class="line"></div><div class="line">#define MY_NAME &quot;bobo&quot;</div><div class="line"></div><div class="line">@interface MyClass : NSObject</div><div class="line"></div><div class="line">-(void)fun:(int)i;</div><div class="line"></div><div class="line">@end</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">// MyClass.m</div><div class="line">#import &quot;MyClass.h&quot;</div><div class="line"></div><div class="line">const char* get()&#123;</div><div class="line">    return &quot;c&quot;;</div><div class="line">&#125;</div><div class="line"></div><div class="line">NSString *globalStr;</div><div class="line"></div><div class="line">@implementation MyClass</div><div class="line">-(void)fun:(int)i&#123;</div><div class="line">    if(i&gt;0)&#123;</div><div class="line">        NSString *name = [NSString stringWithFormat:@&quot;%s&quot;,MY_NAME];</div><div class="line">        NSLog(@&quot;%@&quot;,name);</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line">@end</div></pre></td></tr></table></figure>
+<p>通过上述命令，我们可以获取到AST如图：</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/libclang0.png" alt=""></p>
+<p>AST最外面一层是<code>TranslationUnitDecl</code>，是以文件的单元的，类似于一个Root节点，”统领”下面所有的信息。</p>
+<p>AST中比较关键的两类节点：<code>Decl</code>和<code>Stmt</code></p>
+<ol>
+<li>Decl:申明。如<code>TranslationUnitDecl</code> <code>VarDecl</code> <code>ObjCInterfaceDecl</code> <code>ObjCImplementationDecl</code> <code>FunctionDecl</code> <code>ObjCMethodDecl</code> 都是变量、类、方法的申明</li>
+<li>Stmt：表达式。如<code>CompoundStmt</code> <code>BinaryOperator</code> <code>IfStmt</code> 具体的赋值语句、判断语句等</li>
+</ol>
+<p>Tips:</p>
+<ol>
+<li>在AST中有两类string：<code>ObjCStringLiteral</code>和<code>StringLiteral</code>。其实OC字符串<code>ObjCStringLiteral</code>内部包含着<code>StringLiteral</code></li>
+<li>由于是经过了预处理的过程，所以宏已经被解析展开。但是在界面展示中且丢失了macro的定义等信息。</li>
+<li>全局变量(globalStr)、方法(get)(包括inclde进来的)、OC类的申明(OCInterface)和定义(OCImplement)是在同一级别的</li>
+</ol>
+<h2 id="libClang"><a href="#libClang" class="headerlink" title="libClang"></a>libClang</h2><p>何为<a href="https://clang.llvm.org/doxygen/group__CINDEX.html" target="_blank" rel="external">libClang</a>？</p>
+<blockquote>
+<p>The C Interface to Clang provides a relatively small API that exposes facilities for parsing source code into an abstract syntax tree (AST), loading already-parsed ASTs, traversing the AST, associating physical source locations with elements within the AST, and other facilities that support Clang-based development tools.</p>
+</blockquote>
+<p>可以通过dlopen使用libClang<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">void *handle = dlopen(&quot;/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib&quot;, RTLD_LAZY);</div></pre></td></tr></table></figure></p>
+<h3 id="获取TranslationUnit"><a href="#获取TranslationUnit" class="headerlink" title="获取TranslationUnit"></a>获取TranslationUnit</h3><p><code>CXTranslationUnit clang_parseTranslationUnit(CXIndex CIdx, const char *source_filename, const char *const *command_line_args, int num_command_line_args...)</code><br>返回值的类型是<code>CXTranslationUnit</code>，即AST底层的TranslationUnit的数据结构</p>
+<p>传入参数为<code>CXIndex</code>可以自己create，还有源路径的路径、commands数组、数组长度等…</p>
+<blockquote>
+<p>具体的cmd参数可以借鉴clang编译参数，然后过来筛选</p>
+</blockquote>
+<h3 id="获取RootCursor"><a href="#获取RootCursor" class="headerlink" title="获取RootCursor"></a>获取RootCursor</h3><p><code>CXCursor clang_getTranslationUnitCursor(CXTranslationUnit)</code></p>
+<p>根据上一步获取到的TU，获取内部的Cursor，作为后续遍历分析AST的根节点</p>
+<h3 id="Traversing-the-AST-with-cursors"><a href="#Traversing-the-AST-with-cursors" class="headerlink" title="Traversing the AST with cursors"></a>Traversing the AST with cursors</h3><p><code>unsigned  clang_visitChildren(CXCursor parent, CXCursorVisitor visitor, CXClientData client_data)</code></p>
+<ol>
+<li><strong>parent</strong>    the cursor whose child may be visited. All kinds of cursors can be visited, including invalid cursors (which, by definition, have no children).</li>
+<li><strong>visitor</strong>    the visitor function that will be invoked for each child of parent.</li>
+<li><strong>client_data</strong>    pointer data supplied by the client, which will be passed to the visitor each time it is invoked.</li>
+</ol>
+<p>我们需要自定义一个Visitor函数，传入<code>clang_visitChildren</code></p>
+<p><code>enum CXChildVisitResult(*CXCursorVisitor)(CXCursor cursor, CXCursor parent, CXClientData client_data)</code><br>其中<code>CXChildVisitResult</code>有三种类型：</p>
+<ol>
+<li><strong>CXChildVisit_Break</strong>：Terminates the cursor traversal.</li>
+<li><strong>CXChildVisit_Continue</strong>：Continues the cursor traversal with the next sibling of the cursor just visited, without visiting its children.</li>
+<li><strong>CXChildVisit_Recurse</strong>：Recursively traverse the children of this cursor, using the same visitor and client data.</li>
+</ol>
+<p>通过在Visitor里面return 不同类型的返回值，来决定遍历AST的方式：是继续回溯、还是跳过、还是结束</p>
+<h3 id="cursor的一些属性"><a href="#cursor的一些属性" class="headerlink" title="cursor的一些属性"></a>cursor的一些属性</h3><h4 id="类型"><a href="#类型" class="headerlink" title="类型"></a>类型</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">//获取类型</div><div class="line">enum CXCursorKind kind = clang_getCursorKind(cursor);</div></pre></td></tr></table></figure>
+<p>CXCursorKind枚举了所有的cursor类型，包括<code>CXCursor_VarDecl</code>等Decl和<code>CXCursor_BinaryOperator``CXCursor_BinaryOperator</code>等Stmt</p>
+<h4 id="关联source-file"><a href="#关联source-file" class="headerlink" title="关联source file"></a>关联source file</h4><p>AST中的信息和原文件是可以对应的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">CXFile file;</div><div class="line">unsigned int line,column,start,end;</div><div class="line">CXSourceRange range = clang_getCursorExtent(cursor);</div><div class="line">CXSourceLocation startLocation = clang_getRangeStart(range);</div><div class="line">CXSourceLocation endLocation = clang_getRangeEnd(range);</div><div class="line">    </div><div class="line">clang_getExpansionLocation(startLocation, &amp;file, &amp;line, &amp;column, &amp;start);</div><div class="line">clang_getExpansionLocation(endLocation, &amp;file, &amp;line, &amp;column, &amp;end);</div><div class="line"></div><div class="line">//获取文件名</div><div class="line">CXString cxname = clang_getFileName(file);</div><div class="line">const char* filename = clang_getCString(cxname);</div></pre></td></tr></table></figure>
+<p>可以将当期的cursor和源文件的文件路径以及文件行号、列号、start、end对应。但是要注意，由于AST是针对预处理后的文件，所有如果原文件中使用到了macro，可能会有所差异。</p>
+<p>严格来说，AST和预处理后的文件可以严格对应。<code>clang -E xxx.m/c/cpp</code></p>
+<p>因此针对某个输入文件通过libClang分析时，因为源文件会include很多其他的文件包括系统库，所以AST会非常庞大。可以通过<code>FileName</code>来过滤AST的cursor</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">//过滤文件</div><div class="line">if(filename == NULL)</div><div class="line">	return CXChildVisit_Continue;</div><div class="line">    </div><div class="line">//过滤系统头文件</div><div class="line">std::string fileNameStr = filename;</div><div class="line">if(fileNameStr.find(&quot;Xcode.app&quot;)!=std::string::npos || fileNameStr.find(&quot;Contents/Developer/Platforms&quot;)!=std::string::npos)</div><div class="line">        return CXChildVisit_Continue;</div></pre></td></tr></table></figure>
+<h3 id="获取tokens的信息"><a href="#获取tokens的信息" class="headerlink" title="获取tokens的信息"></a>获取tokens的信息</h3><p>cursor可以对应一个range，range则可以对应到源文件中的tokens<br><code>void clang_tokenize(CXTranslationUnit TU, CXSourceRange Range, CXToken **Tokens, unsigned *NumTokens)</code></p>
+<p>然后可以获取每个token的属性：<br><img src="http://osvtd0cnl.bkt.clouddn.com/libclang1.png" alt=""></p>
+<p>如token的类型：</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/libclang2.png" alt=""></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/08/06/Method-Swizzling的两种姿势/" rel="next" title="Method Swizzling的两种姿势">
+                <i class="fa fa-chevron-left"></i> Method Swizzling的两种姿势
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg"
+               alt="Ph.D.5" />
+          <p class="site-author-name" itemprop="name">Ph.D.5</p>
+           
+              <p class="site-description motion-element" itemprop="description">一只萌新的程序猿的随笔</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/745198699" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#AST的获取"><span class="nav-number">1.</span> <span class="nav-text">AST的获取</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ast-dump的基本使用"><span class="nav-number">1.1.</span> <span class="nav-text">-ast-dump的基本使用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#libClang"><span class="nav-number">2.</span> <span class="nav-text">libClang</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#获取TranslationUnit"><span class="nav-number">2.1.</span> <span class="nav-text">获取TranslationUnit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取RootCursor"><span class="nav-number">2.2.</span> <span class="nav-text">获取RootCursor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Traversing-the-AST-with-cursors"><span class="nav-number">2.3.</span> <span class="nav-text">Traversing the AST with cursors</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cursor的一些属性"><span class="nav-number">2.4.</span> <span class="nav-text">cursor的一些属性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#类型"><span class="nav-number">2.4.1.</span> <span class="nav-text">类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#关联source-file"><span class="nav-number">2.4.2.</span> <span class="nav-text">关联source file</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取tokens的信息"><span class="nav-number">2.5.</span> <span class="nav-text">获取tokens的信息</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ph.D.5</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>
