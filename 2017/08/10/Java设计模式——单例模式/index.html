@@ -93,7 +93,7 @@
 <meta property="og:url" content="http://127.0.0.1/2017/08/10/Java设计模式——单例模式/index.html">
 <meta property="og:site_name" content="Ph.D.5的博客">
 <meta property="og:description" content="引言何为单例？一个类只会有一个实例。所以关键点是构造函数private化，然后内部持有一个static实例供外部使用。 懒汉12345678910public class Singleton &amp;#123;  	private static Singleton instance;  	private Singleton ()&amp;#123;&amp;#125;  	public static synchroni">
-<meta property="og:updated_time" content="2017-08-10T16:01:30.000Z">
+<meta property="og:updated_time" content="2017-08-12T03:58:09.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java设计模式——单例模式">
 <meta name="twitter:description" content="引言何为单例？一个类只会有一个实例。所以关键点是构造函数private化，然后内部持有一个static实例供外部使用。 懒汉12345678910public class Singleton &amp;#123;  	private static Singleton instance;  	private Singleton ()&amp;#123;&amp;#125;  	public static synchroni">
@@ -360,6 +360,24 @@
 <p>注意要点： <strong><code>volatile</code></strong>  <code>synchronized</code> 两次判断</p>
 <p>优点：很牛逼</p>
 <p>缺点：不能防止反射</p>
+<p>补充：如果instance 没有添加<code>volatile</code>会怎样？</p>
+<p>很类似于volatile ++ 操作能不能保证同步这个问题，因为++是复合操作，可以分为 load-add-store三个步骤，导致了volatile不能同步（原子性）。</p>
+<p>同样，在这个单例模式里，实例化时，<code>instance = new Singleton();</code>也是复合操作。可以分为：</p>
+<ol>
+<li>根据Singleton的class元信息分配堆内存<code>malloc(sizeof(Singleton))</code></li>
+<li>初始化堆内存中的数据</li>
+<li>将分配好的内存的地址交给<code>instance</code></li>
+</ol>
+<p>根据happens-before原则，1 happens-before 2 , 1 happens-before 3。意思是2和3其实可以被指令重排序的。所以指令的顺序可以是1-2-3，也可以是1-3-2。</p>
+<p>如果1-3-2的指令顺序，可能会导致线程A进入了<code>new</code>，执行到了1-3时，此时<code>instance</code>已经被赋值了，指向了一块堆内存(虽然内部还没初始化完善)。所以此时<code>instance!=null</code>。</p>
+<p>另一个线程B<code>getInstance()</code>时，发现不是null，就直接返回了instance，其实内部的内存还没初始化。后续使用instance时就会发生异常。</p>
+<p>具体volatile的原理，可以参考：<a href="http://ifeve.com/java-memory-model-4/" target="_blank" rel="external">volatile详解</a>。总结三点：</p>
+<ol>
+<li>任意的读写 - volatile写 不能重排</li>
+<li>volatile读 - 任意的读写 不能重排</li>
+<li>volatile写 - volatile读 不能重排</li>
+</ol>
+<p>拿单例来说，步骤3是volatile写，所以任意的读写不会和v写重排序，保证了1-2-3的顺序。</p>
 <h2 id="枚举"><a href="#枚举" class="headerlink" title="枚举"></a>枚举</h2><p>所以到底怎么防止反射？</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">public enum Single &#123;</div><div class="line">	INSTANCE;</div><div class="line">	</div><div class="line">	public String name;</div><div class="line">	public int age;</div><div class="line">	</div><div class="line">	public void func()&#123;</div><div class="line">		System.out.println(&quot;name:&quot;+this.name()+&quot; age:&quot;+this.age);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>使用时：</p>
