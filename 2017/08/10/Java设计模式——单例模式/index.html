@@ -93,7 +93,7 @@
 <meta property="og:url" content="http://127.0.0.1/2017/08/10/Java设计模式——单例模式/index.html">
 <meta property="og:site_name" content="Ph.D.5的博客">
 <meta property="og:description" content="引言何为单例？一个类只会有一个实例。所以关键点是构造函数private化，然后内部持有一个static实例供外部使用。 懒汉12345678910public class Singleton &amp;#123;  	private static Singleton instance;  	private Singleton ()&amp;#123;&amp;#125;  	public static synchroni">
-<meta property="og:updated_time" content="2017-08-12T03:58:09.000Z">
+<meta property="og:updated_time" content="2017-08-12T03:59:15.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java设计模式——单例模式">
 <meta name="twitter:description" content="引言何为单例？一个类只会有一个实例。所以关键点是构造函数private化，然后内部持有一个static实例供外部使用。 懒汉12345678910public class Singleton &amp;#123;  	private static Singleton instance;  	private Singleton ()&amp;#123;&amp;#125;  	public static synchroni">
@@ -377,7 +377,7 @@
 <li>volatile读 - 任意的读写 不能重排</li>
 <li>volatile写 - volatile读 不能重排</li>
 </ol>
-<p>拿单例来说，步骤3是volatile写，所以任意的读写不会和v写重排序，保证了1-2-3的顺序。</p>
+<p>拿单例来说，步骤3是volatile写，所以任意的读写不会和v写重排序，保证了1-2-3的顺序。从而不会出现把空内存地址先赋值给instance的情况了。</p>
 <h2 id="枚举"><a href="#枚举" class="headerlink" title="枚举"></a>枚举</h2><p>所以到底怎么防止反射？</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">public enum Single &#123;</div><div class="line">	INSTANCE;</div><div class="line">	</div><div class="line">	public String name;</div><div class="line">	public int age;</div><div class="line">	</div><div class="line">	public void func()&#123;</div><div class="line">		System.out.println(&quot;name:&quot;+this.name()+&quot; age:&quot;+this.age);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>使用时：</p>
