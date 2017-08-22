@@ -1,0 +1,754 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="何为isa在objc.h和runtime.h中可以查看到： 123456789101112131415161718192021222324/// An opaque type that represents an Objective-C class.typedef struct objc_class *Class;/// Represents an instance of a class.stru">
+<meta property="og:type" content="article">
+<meta property="og:title" content="isa-swizzling &amp; KVO">
+<meta property="og:url" content="http://127.0.0.1/2017/08/22/isa-swizzling-KVO/index.html">
+<meta property="og:site_name" content="Ph.D.5的博客">
+<meta property="og:description" content="何为isa在objc.h和runtime.h中可以查看到： 123456789101112131415161718192021222324/// An opaque type that represents an Objective-C class.typedef struct objc_class *Class;/// Represents an instance of a class.stru">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/isa0.png">
+<meta property="og:image" content="http://osvtd0cnl.bkt.clouddn.com/isa1.png">
+<meta property="og:updated_time" content="2017-08-22T14:05:26.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="isa-swizzling &amp; KVO">
+<meta name="twitter:description" content="何为isa在objc.h和runtime.h中可以查看到： 123456789101112131415161718192021222324/// An opaque type that represents an Objective-C class.typedef struct objc_class *Class;/// Represents an instance of a class.stru">
+<meta name="twitter:image" content="http://osvtd0cnl.bkt.clouddn.com/isa0.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://127.0.0.1/2017/08/22/isa-swizzling-KVO/"/>
+
+
+
+
+
+  <title> isa-swizzling & KVO | Ph.D.5的博客 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Ph.D.5的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://127.0.0.1/2017/08/22/isa-swizzling-KVO/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Ph.D.5">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ph.D.5的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                isa-swizzling & KVO
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-22T22:04:25+08:00">
+                2017-08-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS逆向与安全/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS逆向与安全</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="何为isa"><a href="#何为isa" class="headerlink" title="何为isa"></a>何为isa</h2><p>在<code>objc.h</code>和<code>runtime.h</code>中可以查看到：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">/// An opaque type that represents an Objective-C class.</div><div class="line">typedef struct objc_class *Class;</div><div class="line"></div><div class="line">/// Represents an instance of a class.</div><div class="line">struct objc_object &#123;</div><div class="line">    Class isa  OBJC_ISA_AVAILABILITY;</div><div class="line">&#125;;</div><div class="line"></div><div class="line">struct objc_class &#123;</div><div class="line">    Class isa  OBJC_ISA_AVAILABILITY;</div><div class="line"></div><div class="line">#if !__OBJC2__</div><div class="line">    Class super_class                                        OBJC2_UNAVAILABLE;</div><div class="line">    const char *name                                         OBJC2_UNAVAILABLE;</div><div class="line">    long version                                             OBJC2_UNAVAILABLE;</div><div class="line">    long info                                                OBJC2_UNAVAILABLE;</div><div class="line">    long instance_size                                       OBJC2_UNAVAILABLE;</div><div class="line">    struct objc_ivar_list *ivars                             OBJC2_UNAVAILABLE;</div><div class="line">    struct objc_method_list **methodLists                    OBJC2_UNAVAILABLE;</div><div class="line">    struct objc_cache *cache                                 OBJC2_UNAVAILABLE;</div><div class="line">    struct objc_protocol_list *protocols                     OBJC2_UNAVAILABLE;</div><div class="line">#endif</div><div class="line"></div><div class="line">&#125; OBJC2_UNAVAILABLE;</div></pre></td></tr></table></figure>
+<p><strong>isa是个Class类型的指针</strong>，不论是实例还是类（大家都是对象嘛~），都会有个<code>isa</code>指针。</p>
+<ol>
+<li>实例的isa指向实例所属的类</li>
+<li>类的isa指向它的<strong>元类metaClass</strong>。&gt; 插播一条小tips:类保存了实例方法列表，元类保存着类方法的列表</li>
+<li>元类的isa指向指向Root metaClass，然后Root metaClass的isa指向自己形成封闭的内循环。</li>
+</ol>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/isa0.png" alt=""></p>
+<p>我们可以通过<code>object_getClass(xxx)</code>获取xxx的isa指针：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">SubClass    *obj   = [SubClass new];</div><div class="line">NSLog(@&quot;instance         :%p&quot;, obj);</div><div class="line">NSLog(@&quot;class            :%p&quot;, object_getClass(obj));</div><div class="line">NSLog(@&quot;meta class       :%p&quot;, object_getClass(object_getClass(obj)));</div><div class="line">NSLog(@&quot;root meta        :%p&quot;, object_getClass(object_getClass(object_getClass(obj))));</div><div class="line">NSLog(@&quot;root meta&apos;s meta :%p&quot;, object_getClass(object_getClass(object_getClass(object_getClass(obj)))));</div></pre></td></tr></table></figure>
+<p>输出的内容如下，可以看出isa可我们想象的一样</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">instance         :0x1004070e0</div><div class="line">class            :0x100002790</div><div class="line">meta class       :0x100002768</div><div class="line">root meta        :0x7fffca7e00f0</div><div class="line">root meta&apos;s meta :0x7fffca7e00f0</div></pre></td></tr></table></figure>
+<h3 id="isa-VS-xxx-class"><a href="#isa-VS-xxx-class" class="headerlink" title="isa VS. [xxx class]"></a>isa VS. [xxx class]</h3><p>首先，NSObject有两个<code>class</code>方法。<code>+[NSObject class]</code> 和 <code>-[NSObject class]</code></p>
+<ul>
+<li><code>-[NSObject class]</code>:实例调用时，返回的是实例所属的类</li>
+<li><code>+[NSObject class]</code>:不论是类还是元类，返回的都是类</li>
+</ul>
+<blockquote>
+<p>意思不论是实例还是类，还是meteClass，他们都是得到的类</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">NSLog(@&quot;class            :%p&quot;, [obj class]);</div><div class="line">NSLog(@&quot;meta class       :%p&quot;, [[obj class] class]);</div><div class="line">NSLog(@&quot;root meta        :%p&quot;, [[[obj class] class] class]);</div><div class="line">NSLog(@&quot;root meta&apos;s meta :%p&quot;, [[[[obj class] class] class] class]);</div><div class="line">class            :0x100002790</div><div class="line">meta class       :0x100002790</div><div class="line">root meta        :0x100002790</div><div class="line">root meta&apos;s meta :0x100002790</div></pre></td></tr></table></figure>
+<h2 id="KVO"><a href="#KVO" class="headerlink" title="KVO"></a>KVO</h2><h3 id="KVC基础"><a href="#KVC基础" class="headerlink" title="KVC基础"></a>KVC基础</h3><p>通过实例可以通过get/set方法访问成员变量和方法，KVC机制则提供了key-value形式去访问。</p>
+<p>在xcode里面找到了源码：<code>@interface NSObject(NSKeyValueCoding)</code>，内部提供了两类方法：</p>
+<ul>
+<li>设置属性：</li>
+</ul>
+<p><code>- (void)setValue:(nullable id)value forKey:(NSString *)key;</code></p>
+<p><code>- (void)setValue:(nullable id)value forKeyPath:(NSString *)keyPath;</code></p>
+<ul>
+<li>读取属性：</li>
+</ul>
+<p><code>- (void)setValue:(nullable id)value forKey:(NSString *)key;</code></p>
+<p><code>- (nullable id)valueForKeyPath:(NSString *)keyPath;</code></p>
+<blockquote>
+<p>keyPath:属性中的属性~比如Team里面有个属性是person，则Team可以通过key <code>person</code>访问，Person中有name，则Team可以通过keyPath <code>person.name</code>来访问</p>
+</blockquote>
+<p>KVC中key查询顺序：</p>
+<ol>
+<li>查找set、get方法</li>
+<li>查找同名的成员属性</li>
+<li>查找_的成员变量</li>
+</ol>
+<h3 id="KVO-demo"><a href="#KVO-demo" class="headerlink" title="KVO demo"></a>KVO demo</h3><ul>
+<li>主体(被观察)类：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">@interface MyClass : NSObject</div><div class="line">@property(nonatomic,copy) NSString * name;</div><div class="line"></div><div class="line">@end</div><div class="line"></div><div class="line">@implementation MyClass</div><div class="line">@end</div></pre></td></tr></table></figure>
+<p>因此，我们可以通过key来访问<code>name</code></p>
+<ul>
+<li>观察者</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line">@interface Observer : NSObject</div><div class="line">@property (nonatomic,assign) MyClass *clz;</div><div class="line">- (instancetype) initWithClz:(MyClass *)clz;</div><div class="line">@end</div><div class="line"></div><div class="line">@implementation Observer</div><div class="line">-(instancetype)initWithClz:(MyClass *)clz&#123;</div><div class="line">    </div><div class="line">    self = [super init];</div><div class="line">    </div><div class="line">    if(self)&#123;</div><div class="line">        _clz = clz;</div><div class="line">        NSLog(@&quot;————before————&quot;);</div><div class="line">        [_clz printInfo];</div><div class="line">        </div><div class="line">        [_clz addObserver:self forKeyPath:@&quot;name&quot; options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:nil];</div><div class="line">        </div><div class="line">        NSLog(@&quot;————after————&quot;);</div><div class="line">        [_clz printInfo];</div><div class="line">    &#125;</div><div class="line">    return self;</div><div class="line">&#125;</div><div class="line"></div><div class="line">-(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary&lt;NSKeyValueChangeKey,id&gt; *)change context:(void *)context&#123;</div><div class="line">    </div><div class="line">    if([keyPath isEqualToString:@&quot;name&quot;])&#123;</div><div class="line">        NSLog(@&quot;name:%@-&gt;%@&quot;,[change objectForKey:@&quot;old&quot;],[change objectForKey:@&quot;new&quot;]);</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">-(void)dealloc&#123;</div><div class="line">    [_clz removeObserver:self forKeyPath:@&quot;name&quot;];</div><div class="line">&#125;</div><div class="line">@end</div></pre></td></tr></table></figure>
+<p>注册指定Key路径的监听器： <code>addObserver: forKeyPath: options: context:</code><br>删除指定Key路径的监听器： <code>removeObserver: forKeyPath、removeObserver: forKeyPath: context:</code><br>回调监听： <code>observeValueForKeyPath: ofObject: change: context:</code></p>
+<p>其中options：</p>
+<ul>
+<li><code>NSKeyValueObservingOptionNew</code> : 会把修改后的值存入回调参数<code>change</code>中，key是<code>new</code></li>
+<li><code>NSKeyValueObservingOptionOld</code> : 会把修改前的值存入回调参数<code>change</code>中，key是<code>old</code></li>
+</ul>
+<h2 id="isa-swizzling"><a href="#isa-swizzling" class="headerlink" title="isa-swizzling"></a>isa-swizzling</h2><p>针对上述的Demo，我们在<code>addObserver</code>前后分别调用方法，输出MyClass的相关信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">-(void)printInfo&#123;</div><div class="line">    NSLog(@&quot;class:%@&quot;,[self class]);</div><div class="line">    NSLog(@&quot;isa:%@,supperclass:%@&quot;,NSStringFromClass(object_getClass(self)),</div><div class="line">          class_getSuperclass(object_getClass(self)));</div><div class="line">    NSLog(@&quot;self:%@, [self superclass]:%@&quot;, self, [self superclass]);</div><div class="line">    NSLog(@&quot;age setter function pointer:%p&quot;, class_getMethodImplementation(object_getClass(self), @selector(setName:)));</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">2017-08-22 15:29:00.914189+0800 KVO[15633:862356] ————before————</div><div class="line">2017-08-22 15:29:00.914633+0800 KVO[15633:862356] class:MyClass</div><div class="line">2017-08-22 15:29:00.914727+0800 KVO[15633:862356] isa:MyClass,supperclass:NSObject</div><div class="line">2017-08-22 15:29:00.914866+0800 KVO[15633:862356] self:&lt;MyClass: 0x100306cf0&gt;, [self superclass]:NSObject</div><div class="line">2017-08-22 15:29:00.914881+0800 KVO[15633:862356] age setter function pointer:0x100001ae0</div><div class="line">2017-08-22 15:29:00.915228+0800 KVO[15633:862356] ————after————</div><div class="line">2017-08-22 15:29:00.915248+0800 KVO[15633:862356] class:MyClass</div><div class="line">2017-08-22 15:29:00.915281+0800 KVO[15633:862356] isa:NSKVONotifying_MyClass,supperclass:MyClass</div><div class="line">2017-08-22 15:29:00.915318+0800 KVO[15633:862356] self:&lt;MyClass: 0x100306cf0&gt;, [self superclass]:NSObject</div><div class="line">2017-08-22 15:29:00.915327+0800 KVO[15633:862356] age setter function pointer:0x7fffadd16136</div></pre></td></tr></table></figure>
+<p>可以看出在注册观察者前后，class没有变，但是isa改变了，指向了<code>NSKVONotifying_MyClass</code>。这就是本文要研究是<strong>isa-swizzling</strong></p>
+<h3 id="KVO原理"><a href="#KVO原理" class="headerlink" title="KVO原理"></a>KVO原理</h3><p>当注册观察者时，会<strong>动态</strong>为被观察的类创建一个子类<code>NSKVONotifying_XXX</code>，然后重写原类中的setter实现监听。然后使用<strong><code>object_setClass()</code></strong>将实例的isa指针swizzle到动态生成的类。(因为方法SEL的查找是依靠isa的)所以在调用setter方法时，会调用到动态子类覆写的setter中。</p>
+<p>苹果官文有详细的介绍，感兴趣的可以自己查看<a href="https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/KeyValueObserving/Articles/KVOCompliance.html" target="_blank" rel="external">Key-Value Observing Programming Guide</a></p>
+<p>在setter的内部，会调用<code>willChangeValueForKey:</code>和<code>didChangeValueForKey:</code>通知观察者，调用<code>observeValueForKey:ofObject:change:context:</code>，实现监听功能。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">- (void)setBalance:(double)theBalance &#123;</div><div class="line">    [self willChangeValueForKey:@&quot;balance&quot;];</div><div class="line">    _balance = theBalance;</div><div class="line">    [self didChangeValueForKey:@&quot;balance&quot;];</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>盗个图</p>
+<p><img src="http://osvtd0cnl.bkt.clouddn.com/isa1.png" alt=""></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/08/21/深度剖析Block/" rel="next" title="深度剖析Block">
+                <i class="fa fa-chevron-left"></i> 深度剖析Block
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg"
+               alt="Ph.D.5" />
+          <p class="site-author-name" itemprop="name">Ph.D.5</p>
+           
+              <p class="site-description motion-element" itemprop="description">一只萌新的程序猿的随笔</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">12</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/745198699" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#何为isa"><span class="nav-number">1.</span> <span class="nav-text">何为isa</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#isa-VS-xxx-class"><span class="nav-number">1.1.</span> <span class="nav-text">isa VS. [xxx class]</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KVO"><span class="nav-number">2.</span> <span class="nav-text">KVO</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#KVC基础"><span class="nav-number">2.1.</span> <span class="nav-text">KVC基础</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KVO-demo"><span class="nav-number">2.2.</span> <span class="nav-text">KVO demo</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#isa-swizzling"><span class="nav-number">3.</span> <span class="nav-text">isa-swizzling</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#KVO原理"><span class="nav-number">3.1.</span> <span class="nav-text">KVO原理</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ph.D.5</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>
