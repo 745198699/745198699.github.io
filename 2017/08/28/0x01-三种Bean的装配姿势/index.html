@@ -1,0 +1,767 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="Bean，容器，由Spring负责创建，通常单例。 之前了解了DI依赖注入，注入到构造器、setter或者接口方法中的实例，就是Spring生成的Bean。 下面具体说说三种Bean的装配姿势  XML装配 Java代码装配 自动装配   注意区分装配方式和注入方式，注入方式主要是区分考虑了注入点，是注入的构造器还是setter等，而装配方式则是如果实现构造器、setter的注入  先看下代码基础">
+<meta property="og:type" content="article">
+<meta property="og:title" content="0x01 三种Bean的装配姿势">
+<meta property="og:url" content="http://127.0.0.1/2017/08/28/0x01-三种Bean的装配姿势/index.html">
+<meta property="og:site_name" content="Ph.D.5的博客">
+<meta property="og:description" content="Bean，容器，由Spring负责创建，通常单例。 之前了解了DI依赖注入，注入到构造器、setter或者接口方法中的实例，就是Spring生成的Bean。 下面具体说说三种Bean的装配姿势  XML装配 Java代码装配 自动装配   注意区分装配方式和注入方式，注入方式主要是区分考虑了注入点，是注入的构造器还是setter等，而装配方式则是如果实现构造器、setter的注入  先看下代码基础">
+<meta property="og:updated_time" content="2017-08-28T07:22:22.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="0x01 三种Bean的装配姿势">
+<meta name="twitter:description" content="Bean，容器，由Spring负责创建，通常单例。 之前了解了DI依赖注入，注入到构造器、setter或者接口方法中的实例，就是Spring生成的Bean。 下面具体说说三种Bean的装配姿势  XML装配 Java代码装配 自动装配   注意区分装配方式和注入方式，注入方式主要是区分考虑了注入点，是注入的构造器还是setter等，而装配方式则是如果实现构造器、setter的注入  先看下代码基础">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://127.0.0.1/2017/08/28/0x01-三种Bean的装配姿势/"/>
+
+
+
+
+
+  <title> 0x01 三种Bean的装配姿势 | Ph.D.5的博客 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Ph.D.5的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://127.0.0.1/2017/08/28/0x01-三种Bean的装配姿势/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Ph.D.5">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ph.D.5的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                0x01 三种Bean的装配姿势
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-28T15:20:45+08:00">
+                2017-08-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Bean，容器，由Spring负责创建，通常单例。</p>
+<p>之前了解了DI依赖注入，注入到构造器、setter或者接口方法中的实例，就是Spring生成的Bean。 下面具体说说三种Bean的装配姿势</p>
+<ol>
+<li>XML装配</li>
+<li>Java代码装配</li>
+<li>自动装配</li>
+</ol>
+<blockquote>
+<p>注意区分装配方式和注入方式，注入方式主要是区分考虑了注入点，是注入的构造器还是setter等，而装配方式则是如果实现构造器、setter的注入</p>
+</blockquote>
+<p>先看下代码基础功能</p>
+<p>乐器类：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">public interface Media &#123;</div><div class="line">    void show();</div><div class="line">&#125;</div><div class="line">public class Piano implements Media &#123;</div><div class="line">    public void show() &#123;</div><div class="line">        System.out.println(&quot;piano show...&quot;);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>演奏家类：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">public interface Player &#123;</div><div class="line">    void play();</div><div class="line">&#125;</div><div class="line">public class PianoPlayer implements Player &#123;</div><div class="line">    private String name;</div><div class="line">    private Media piano;</div><div class="line">    private List&lt;String&gt; songs;</div><div class="line"></div><div class="line">    public void play() &#123;</div><div class="line">        System.out.println(name+ &quot; play piano&quot;);</div><div class="line">        piano.show();</div><div class="line">        for(String song:songs)&#123;</div><div class="line">            System.out.println(song);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>现在PinnoPlayer中的Media piano还未注入赋值，下面具体看看如何注入的</p>
+<h2 id="XML装配"><a href="#XML装配" class="headerlink" title="XML装配"></a>XML装配</h2><blockquote>
+<p>本小节所有的代码都是在自己定义的<code>xml.</code>package中，所以会经常看到class=”xml.xxx”</p>
+</blockquote>
+<p>由XML文件负责管理bean的生成和注入以及注入的渠道，如通过构造器注入或者通过setter注入</p>
+<h3 id="构造器注入"><a href="#构造器注入" class="headerlink" title="构造器注入"></a>构造器注入</h3><p>给PianoPlayer定义一个构造器：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">public PianoPlayer(String name, Media media)&#123;</div><div class="line">	this.name = name;</div><div class="line">	this.piano = media;</div><div class="line">	this.songs = songs;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>然后定义一个xml，用来生成<code>piano</code>的bean，并注入到<code>PianoPlayer</code>的构造器中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</div><div class="line">&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;</div><div class="line">       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</div><div class="line">       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;</div><div class="line"></div><div class="line">    &lt;bean id=&quot;piano&quot; class=&quot;xml.Piano&quot; /&gt;</div><div class="line"></div><div class="line">    &lt;bean id=&quot;pianoPlayer&quot; class=&quot;xml.PianoPlayer&quot;&gt;</div><div class="line">        &lt;constructor-arg value=&quot;bobo&quot;/&gt;</div><div class="line">        &lt;constructor-arg ref=&quot;piano&quot;/&gt;</div><div class="line">        &lt;constructor-arg&gt;</div><div class="line">            &lt;list&gt;</div><div class="line">                &lt;value&gt;贝多芬进行曲&lt;/value&gt;</div><div class="line">                &lt;value&gt;献给爱丽丝&lt;/value&gt;</div><div class="line">            &lt;/list&gt;</div><div class="line">        &lt;/constructor-arg&gt;</div><div class="line">    &lt;/bean&gt;</div><div class="line"></div><div class="line">&lt;/beans&gt;</div></pre></td></tr></table></figure>
+<ol>
+<li>bean的<code>id</code>是唯一标识，<code>class</code>则是指定这个bean的类型，如果就指定了这两项，没有指定其他的参数，则调用默认构造器。所以，这里就生成了一个<code>Piano</code>的实例，id是<code>piano</code></li>
+<li>构造pianoPlayer，在Java代码中已经为其写好了构造器，但是入到传入三个参数，这个注入的操作就是在xml中指定的</li>
+<li>为Player指定了id和class后，添加了三个<code>&lt;constructor-arg&gt;</code>子标签。如果是String/int等类型的，可以直接通过<code>value</code>设定。然后，之前构造好的bean则是通过<code>ref</code>指定bean的id，如<code>piano</code></li>
+<li>如果是list类型的，则需要<code>&lt;list&gt;</code>标签来实现，类似还有<code>&lt;set&gt;</code>标签。list内部可以设置<code>&lt;value&gt;...&lt;/value&gt;</code>和<code>&lt;ref bean=&quot;id&quot;&gt;</code>来指定是普通数据还是bean的引用。</li>
+</ol>
+<h3 id="setter注入"><a href="#setter注入" class="headerlink" title="setter注入"></a>setter注入</h3><p>这时候就不需要添加构造器了，取而代之的是各种setter</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">public void setName(String name)&#123;</div><div class="line">    this.name = name;</div><div class="line">&#125;</div><div class="line">public void setPiano(Media piano)&#123;</div><div class="line">    this.piano = piano;</div><div class="line">&#125;</div><div class="line">public void setSongs(List&lt;String&gt; songs)&#123;</div><div class="line">    this.songs = songs;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>xml内容如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;bean id=&quot;piano&quot; class=&quot;xml.Piano&quot; /&gt;</div><div class="line"></div><div class="line">&lt;bean id=&quot;pianoPlayer&quot; class=&quot;xml.PianoPlayer&quot;&gt;</div><div class="line">	&lt;property name=&quot;name&quot; value=&quot;123&quot;/&gt;</div><div class="line">	&lt;property name=&quot;piano&quot; ref=&quot;piano&quot;/&gt;</div><div class="line">	&lt;property name=&quot;songs&quot;&gt;</div><div class="line">    	&lt;list&gt;</div><div class="line">        	&lt;value&gt;贝多芬进行曲&lt;/value&gt;</div><div class="line">        	&lt;value&gt;献给爱丽丝&lt;/value&gt;</div><div class="line">    	&lt;/list&gt;</div><div class="line">	&lt;/property&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+<ol>
+<li>通过<code>&lt;property&gt;</code>标签来调用setter，完成注入</li>
+<li>其他的和<code>&lt;constructor-arg&gt;</code>没区别</li>
+</ol>
+<h3 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h3><p>因为是使用了XML去管理了bean，所以我们需要通过<code>ClassPathXmlApplicationContext</code>来获取相应的Bean</p>
+<ul>
+<li>通过class</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(&quot;xml/SpringXml.xml&quot;);</div><div class="line">PianoPlayer pianoPlayer = context.getBean(xml.PianoPlayer.class);</div><div class="line">pianoPlayer.play();</div></pre></td></tr></table></figure>
+<ul>
+<li>通过id</li>
+</ul>
+<p>可能xml里面同类型的class有多个，但是ID都是唯一的，所以可以通过ID来获取</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(&quot;xml/SpringXml.xml&quot;);</div><div class="line">PianoPlayer pianoPlayer = (PianoPlayer) context.getBean(&quot;pianoPlayer&quot;);</div><div class="line">pianoPlayer.play();</div></pre></td></tr></table></figure>
+<h2 id="Java装配"><a href="#Java装配" class="headerlink" title="Java装配"></a>Java装配</h2><p>XML装配是之前经常用的，现在已经流行使用Java的<strong>注解</strong>进行装配了，不需要写繁琐的XML文件，而是使用一个普通的<code>Java文件</code>替代</p>
+<h3 id="构造器注入-1"><a href="#构造器注入-1" class="headerlink" title="构造器注入"></a>构造器注入</h3><p>同样，给Player添加构造器，传入属性参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">public PianoPlayer(String name, Media media,List&lt;String&gt; songs)&#123;</div><div class="line">	this.name = name;</div><div class="line">	this.piano = media;</div><div class="line">	this.songs = songs;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>接下来编写Java的配置文件：关键的注解有<code>@Configuration</code>和<code>@Bean</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">@Configuration</div><div class="line">public class SpringConfig &#123;</div><div class="line"></div><div class="line">    @Bean</div><div class="line">    public Media createPiano()&#123;</div><div class="line">        return new Piano();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Bean</div><div class="line">    public Player creantePianoPlayer()&#123;</div><div class="line">        List&lt;String&gt; songs = new ArrayList&lt;&gt;();</div><div class="line">        songs.add(&quot;贝多芬进行曲&quot;);</div><div class="line">        songs.add(&quot;献给爱丽丝&quot;);</div><div class="line">        return new PianoPlayer(&quot;贝多芬&quot;,createPiano(),songs);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ol>
+<li><code>@Configuration</code>表示这个类是个Bean的配置类，类似于之前XML的作用，用于生成Bean，并完成注入</li>
+<li>在配置文件中，我们可以自己写方法生成返回类的实例，并添加<code>@Bean</code>，告诉Spring这里生成的实例装配到Bean中</li>
+</ol>
+<h3 id="setter注入-1"><a href="#setter注入-1" class="headerlink" title="setter注入"></a>setter注入</h3><p>删去自定义的构造器，并添加各属性的setter方法</p>
+<p>Java配置文件如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">@Bean</div><div class="line">public Player creantePianoPlayer()&#123;</div><div class="line">    List&lt;String&gt; songs = new ArrayList&lt;&gt;();</div><div class="line">    songs.add(&quot;贝多芬进行曲&quot;);</div><div class="line">    songs.add(&quot;献给爱丽丝&quot;);</div><div class="line">    PianoPlayer pianoPlayer = new PianoPlayer();</div><div class="line">    pianoPlayer.setName(&quot;贝多芬&quot;);</div><div class="line">    pianoPlayer.setPiano(createPiano());</div><div class="line">    pianoPlayer.setSongs(songs);</div><div class="line"></div><div class="line">    return pianoPlayer;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>所以，如果使用Java装配的话，很随意，不像XML有特性的格式要求，Java只需要用<code>@Configuration</code>指定是配置文件，然后用<code>@Bean</code>指定是生成Bean，注入直接调用内部的方法即可。</p>
+<h3 id="使用示例-1"><a href="#使用示例-1" class="headerlink" title="使用示例"></a>使用示例</h3><p>因为使用的是Java配置文件，所以我们需要对应的上下文Context-<code>AnnotationConfigApplicationContext</code></p>
+<ul>
+<li>通过class</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">ApplicationContext applicationContext = new AnnotationConfigApplicationContext(SpringConfig.class);</div><div class="line">Player player = (Player) applicationContext.getBean(Player.class);</div><div class="line">player.play();</div></pre></td></tr></table></figure>
+<ul>
+<li>通过name</li>
+</ul>
+<p>如果Java配置文件中有多个相同类型的实例，则可以通过name来唯一指定</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line">@Configuration</div><div class="line">public class SpringConfig &#123;</div><div class="line"></div><div class="line">    @Bean</div><div class="line">    public Media createPiano()&#123;</div><div class="line">        return new Piano();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Bean(name = &quot;1号贝多芬&quot;)</div><div class="line">    public Player creantePianoPlayer()&#123;</div><div class="line">        List&lt;String&gt; songs = new ArrayList&lt;&gt;();</div><div class="line">        songs.add(&quot;贝多芬进行曲1&quot;);</div><div class="line">        songs.add(&quot;献给爱丽丝1&quot;);</div><div class="line">        PianoPlayer pianoPlayer = new PianoPlayer();</div><div class="line">        pianoPlayer.setName(&quot;贝多芬1&quot;);</div><div class="line">        pianoPlayer.setPiano(createPiano());</div><div class="line">        pianoPlayer.setSongs(songs);</div><div class="line"></div><div class="line">        return pianoPlayer;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Bean(name = &quot;2号贝多芬&quot;)</div><div class="line">    public Player creantePianoPlayer2()&#123;</div><div class="line">        List&lt;String&gt; songs = new ArrayList&lt;&gt;();</div><div class="line">        songs.add(&quot;贝多芬进行曲2&quot;);</div><div class="line">        songs.add(&quot;献给爱丽丝2&quot;);</div><div class="line">        PianoPlayer pianoPlayer = new PianoPlayer();</div><div class="line">        pianoPlayer.setName(&quot;贝多芬2&quot;);</div><div class="line">        pianoPlayer.setPiano(createPiano());</div><div class="line">        pianoPlayer.setSongs(songs);</div><div class="line"></div><div class="line">        return pianoPlayer;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">ApplicationContext applicationContext = new AnnotationConfigApplicationContext(SpringConfig.class);</div><div class="line">Player player = (Player) applicationContext.getBean(&quot;2号贝多芬&quot;);</div><div class="line">player.play();</div></pre></td></tr></table></figure>
+<h2 id="自动装配"><a href="#自动装配" class="headerlink" title="自动装配"></a>自动装配</h2><p>所谓自动装配就是不需要配置文件来管理Bean的生成和注入，关键注解：<code>@Configuration</code>、<code>@ComponentScan</code>、<code>@Autowired</code></p>
+<blockquote>
+<p>ps. 但是仍需要Java配置文件或XML配置文件，只不过无需复杂的bean的生成和注入的代码</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">@Component</div><div class="line">public class PianoPlayer implements MediaPlayer &#123;</div><div class="line">    private Media media;</div><div class="line"></div><div class="line">    @Autowired</div><div class="line">    public PianoPlayer(Media media)&#123;</div><div class="line">        this.media = media;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override</div><div class="line">    public void play() &#123;</div><div class="line">        media.play();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ol>
+<li><code>@Component</code>会告知Spring，该类要装载成Bean</li>
+<li><code>@Autowired</code>修饰的方法表明：该方法传入的参数是Spring的Bean，自己去找吧</li>
+<li>不论是构造器还是setter还是普通的方法，如果传入的参数是被<code>@Component</code>修饰的，就会自动装配</li>
+<li>自动装配需要通过配置文件开启，可以是Java也可以是XML</li>
+</ol>
+<h3 id="Java配置"><a href="#Java配置" class="headerlink" title="Java配置"></a>Java配置</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">@ContextConfiguration(classes = SpringConfig.class)</div><div class="line">public class MainTest &#123;</div><div class="line"></div><div class="line">    public static void main(String[]args)&#123;</div><div class="line">        ApplicationContext context = new AnnotationConfigApplicationContext(auto.SpringConfig.class);</div><div class="line">        MediaPlayer mediaPlayer = context.getBean(MediaPlayer.class);</div><div class="line">        mediaPlayer.play();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>自动装载可能会出现歧义的问题，后面再详细介绍</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/08/28/0x00-初识Spring/" rel="next" title="0x00 初识Spring">
+                <i class="fa fa-chevron-left"></i> 0x00 初识Spring
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="http://osvtd0cnl.bkt.clouddn.com/llvm.jpeg"
+               alt="Ph.D.5" />
+          <p class="site-author-name" itemprop="name">Ph.D.5</p>
+           
+              <p class="site-description motion-element" itemprop="description">一只萌新的程序猿的随笔</p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">14</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/745198699" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#XML装配"><span class="nav-number">1.</span> <span class="nav-text">XML装配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#构造器注入"><span class="nav-number">1.1.</span> <span class="nav-text">构造器注入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setter注入"><span class="nav-number">1.2.</span> <span class="nav-text">setter注入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用示例"><span class="nav-number">1.3.</span> <span class="nav-text">使用示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java装配"><span class="nav-number">2.</span> <span class="nav-text">Java装配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#构造器注入-1"><span class="nav-number">2.1.</span> <span class="nav-text">构造器注入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setter注入-1"><span class="nav-number">2.2.</span> <span class="nav-text">setter注入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用示例-1"><span class="nav-number">2.3.</span> <span class="nav-text">使用示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动装配"><span class="nav-number">3.</span> <span class="nav-text">自动装配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java配置"><span class="nav-number">3.1.</span> <span class="nav-text">Java配置</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ph.D.5</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>
