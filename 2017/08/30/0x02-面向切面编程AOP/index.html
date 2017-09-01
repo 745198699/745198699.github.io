@@ -93,7 +93,7 @@
 <meta property="og:url" content="http://127.0.0.1/2017/08/30/0x02-面向切面编程AOP/index.html">
 <meta property="og:site_name" content="Ph.D.5的博客">
 <meta property="og:description" content="依赖注入DI解除了应用对象的耦合性，而AOP可以实现横切关注点和所影响的对象之间的解耦。 情景： 演员类，负责表演 123456789101112131415161718192021222324252627public interface Performance &amp;#123;    void perform() throws Exception;&amp;#125;public class Dancer">
-<meta property="og:updated_time" content="2017-08-30T03:04:29.000Z">
+<meta property="og:updated_time" content="2017-09-01T02:01:12.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="0x02 面向切面编程AOP">
 <meta name="twitter:description" content="依赖注入DI解除了应用对象的耦合性，而AOP可以实现横切关注点和所影响的对象之间的解耦。 情景： 演员类，负责表演 123456789101112131415161718192021222324252627public interface Performance &amp;#123;    void perform() throws Exception;&amp;#125;public class Dancer">
@@ -378,8 +378,8 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</div><div class="line">&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;</div><div class="line">       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</div><div class="line">       xmlns:aop=&quot;http://www.springframework.org/schema/aop&quot;</div><div class="line">       xsi:schemaLocation=&quot;http://www.springframework.org/schema/aop</div><div class="line">       http://www.springframework.org/schema/aop/spring-aop-2.0.xsd</div><div class="line">       http://www.springframework.org/schema/beans</div><div class="line">       http://www.springframework.org/schema/beans/spring-beans.xsd &quot;&gt;</div><div class="line"></div><div class="line">    &lt;aop:aspectj-autoproxy/&gt;</div><div class="line"></div><div class="line">    &lt;bean id=&quot;singer&quot; class=&quot;annotation_aop.Singer&quot;/&gt;</div><div class="line">    &lt;bean id=&quot;dancer&quot; class=&quot;annotation_aop.Dancer&quot;/&gt;</div><div class="line">    &lt;bean class=&quot;annotation_aop.Audience&quot;/&gt;</div><div class="line">&lt;/beans&gt;</div></pre></td></tr></table></figure>
 <p>关键点：</p>
 <ol>
-<li><aop:aspectj-autoproxy></aop:aspectj-autoproxy></li>
-<li><beans>中各种aop的命名空间…所以还是用Java吧，简便些</beans></li>
+<li><code>&lt;aop:aspectj-autoproxy/&gt;</code></li>
+<li><code>&lt;beans&gt;</code>中各种aop的命名空间…所以还是用Java吧，简便些</li>
 </ol>
 <h3 id="Around"><a href="#Around" class="headerlink" title="@Around"></a>@Around</h3><p>单独说下Around，如果同时需要Before After，可以考虑用Around代替</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">@Around(&quot;cutPoint()&quot;)</div><div class="line">public void watchPerform(ProceedingJoinPoint pj)&#123;</div><div class="line">    System.out.println(&quot;welcome...&quot;);</div><div class="line">    try &#123;</div><div class="line">        pj.proceed();  //调用原方法</div><div class="line">        System.out.println(&quot;papapa...&quot;);</div><div class="line">    &#125;catch (Throwable e)&#123;</div><div class="line">        System.out.println(&quot;return my money...&quot;);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
@@ -392,6 +392,38 @@
 <li><code>args</code>指定参数名</li>
 <li>壳方法中也要添加参数</li>
 </ol>
+<h3 id="JoinPoint"><a href="#JoinPoint" class="headerlink" title="JoinPoint"></a>JoinPoint</h3><p>除了通过CutPoint传入参数外，其实更常见的是通过JoinPoint获取被<code>代理</code>的类的具体信息。</p>
+<p>前面了解到了<code>ProceedingJoinPoint</code>，该小节的主要对象是<code>JoinPoint</code>，<code>ProceedingJoinPoint</code>是<code>JoinPoint</code>的子接口。</p>
+<p><code>JoinPoint</code>对象封装了SpringAop中切面方法(被监听代理方法)的信息,在切面方法中添加JoinPoint参数,就可以获取到封装了该方法信息的JoinPoint对象. </p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方法名</th>
+<th style="text-align:left">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Signature getSignature();</td>
+<td style="text-align:left">获取封装了署名信息的对象,在该对象中可以获取到目标方法名,所属类的Class等信息</td>
+</tr>
+<tr>
+<td style="text-align:left">Object[] getArgs();</td>
+<td style="text-align:left">获取传入目标方法的参数对象</td>
+</tr>
+<tr>
+<td style="text-align:left">Object getTarget();</td>
+<td style="text-align:left">获取被代理的对象</td>
+</tr>
+<tr>
+<td style="text-align:left">Object getThis();</td>
+<td style="text-align:left">获取代理对象</td>
+</tr>
+</tbody>
+</table>
+<p><code>ProceedingJoinPoint</code>对象是JoinPoint的子接口,该对象只用在@Around的切面方法中,<br>添加了</p>
+<p><code>Object proceed() throws Throwable</code> //执行目标方法<br><code>Object proceed(Object[] var1) throws Throwable</code> //传入的新的参数去执行目标方法 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">/**</div><div class="line">    * 前置方法,在目标方法执行前执行</div><div class="line">    * @param joinPoint 封装了代理方法信息的对象,若用不到则可以忽略不写</div><div class="line">    */</div><div class="line">   @Before(&quot;declareJoinPointerExpression()&quot;)</div><div class="line">   public void beforeMethod(JoinPoint joinPoint)&#123;</div><div class="line">       System.out.println(&quot;目标方法名为:&quot; + joinPoint.getSignature().getName());</div><div class="line">       System.out.println(&quot;目标方法所属类的简单类名:&quot; +        joinPoint.getSignature().getDeclaringType().getSimpleName());</div><div class="line">       System.out.println(&quot;目标方法所属类的类名:&quot; + joinPoint.getSignature().getDeclaringTypeName());</div><div class="line">       System.out.println(&quot;目标方法声明类型:&quot; + Modifier.toString(joinPoint.getSignature().getModifiers()));</div><div class="line">       //获取传入目标方法的参数</div><div class="line">       Object[] args = joinPoint.getArgs();</div><div class="line">       for (int i = 0; i &lt; args.length; i++) &#123;</div><div class="line">           System.out.println(&quot;第&quot; + (i+1) + &quot;个参数为:&quot; + args[i]);</div><div class="line">       &#125;</div><div class="line">       System.out.println(&quot;被代理的对象:&quot; + joinPoint.getTarget());</div><div class="line">       System.out.println(&quot;代理对象自己:&quot; + joinPoint.getThis());</div><div class="line">   &#125;</div></pre></td></tr></table></figure>
 <h2 id="XML切面"><a href="#XML切面" class="headerlink" title="XML切面"></a>XML切面</h2><p>Audience类不用添加<code>@Aspect</code>、<code>@Before</code>之类的注解了</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;bean id=&quot;singer&quot; class=&quot;annotation_aop.Singer&quot;/&gt;</div><div class="line">&lt;bean id=&quot;dancer&quot; class=&quot;annotation_aop.Dancer&quot;/&gt;</div><div class="line">&lt;bean id=&quot;audience&quot; class=&quot;annotation_aop.Audience&quot;/&gt;</div><div class="line"></div><div class="line">&lt;aop:config&gt;</div><div class="line">    &lt;aop:aspect ref=&quot;audience&quot;&gt;</div><div class="line">        &lt;aop:pointcut id=&quot;cutpoint1&quot;</div><div class="line">                      expression=&quot;execution(* annotation_aop.Performance.perform(String)) and args(content)&quot;/&gt;</div><div class="line">        &lt;aop:before pointcut-ref=&quot;cutpoint1&quot; method=&quot;welcome&quot;/&gt;</div><div class="line">        &lt;aop:after pointcut-ref=&quot;cutpoint1&quot; method=&quot;clap&quot;/&gt;</div><div class="line"></div><div class="line"></div><div class="line">    &lt;/aop:aspect&gt;</div><div class="line">&lt;/aop:config&gt;</div></pre></td></tr></table></figure>
 <p>关键点：</p>
@@ -566,7 +598,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#注解切面"><span class="nav-number">1.</span> <span class="nav-text">注解切面</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java配置"><span class="nav-number">1.1.</span> <span class="nav-text">Java配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XML配置"><span class="nav-number">1.2.</span> <span class="nav-text">XML配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Around"><span class="nav-number">1.3.</span> <span class="nav-text">@Around</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#传参"><span class="nav-number">1.4.</span> <span class="nav-text">传参</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#XML切面"><span class="nav-number">2.</span> <span class="nav-text">XML切面</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#补充"><span class="nav-number">3.</span> <span class="nav-text">补充</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#注解切面"><span class="nav-number">1.</span> <span class="nav-text">注解切面</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java配置"><span class="nav-number">1.1.</span> <span class="nav-text">Java配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XML配置"><span class="nav-number">1.2.</span> <span class="nav-text">XML配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Around"><span class="nav-number">1.3.</span> <span class="nav-text">@Around</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#传参"><span class="nav-number">1.4.</span> <span class="nav-text">传参</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JoinPoint"><span class="nav-number">1.5.</span> <span class="nav-text">JoinPoint</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#XML切面"><span class="nav-number">2.</span> <span class="nav-text">XML切面</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#补充"><span class="nav-number">3.</span> <span class="nav-text">补充</span></a></li></ol></div>
             
 
           </div>
